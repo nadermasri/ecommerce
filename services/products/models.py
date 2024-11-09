@@ -1,3 +1,4 @@
+#authentic_lebanese_sentiment_shop/services/products/models.py
 from app import db
 from sqlalchemy.orm import validates
 import logging

@@ -1,3 +1,4 @@
+#authentic_lebanese_sentiment_shop/services/users/models.py
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import validates
@@ -58,6 +59,16 @@ class AdminUser(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def is_admin(self):
+        # Consider both 'SuperAdmin' and any other admin roles as admin
+        return self.role in ['InventoryManager', 'OrderManager', 'CustomerSupport', 'SuperAdmin']
+
+    @property
+    def is_super_admin(self):
+        # Only return True if the user has the 'SuperAdmin' role
+        return self.role == 'SuperAdmin'
 
 class ActivityLog(db.Model):
     __tablename__ = 'activity_logs'

@@ -1,5 +1,6 @@
+#authentic_lebanese_sentiment_shop/services/users/routes.py
 from flask import Blueprint, request, jsonify, abort, current_app
-from flask_login import login_required, current_user
+from flask_login import login_required, current_user, login_user
 import smtplib
 from email.mime.text import MIMEText
 from app import db, limiter
@@ -161,3 +162,19 @@ def customer_support():
     except smtplib.SMTPException as e:
         logger.error(f"Failed to send support email: {e}")
         return jsonify({"error": "Failed to send support request"}), 500
+
+# Add a login route
+
+@users_bp.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+
+    # Verify admin user
+    user = AdminUser.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        login_user(user)
+        return jsonify({"message": "Login successful"}), 200
+    else:
+        return jsonify({"error": "Invalid credentials"}), 401

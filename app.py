@@ -1,3 +1,4 @@
+#authentic_lebanese_sentiment_shop/app.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
@@ -43,7 +44,9 @@ def create_app():
     app.register_blueprint(orders_bp, url_prefix='/orders')
     app.register_blueprint(products_bp, url_prefix='/products')
     app.register_blueprint(reviews_bp, url_prefix='/reviews')
-    app.register_blueprint(users_bp, url_prefix='/users')
+    # app.register_blueprint(users_bp, url_prefix='/users')
+    app.register_blueprint(users_bp, url_prefix='/auth')
+
 
     # Enhanced security headers
     @app.after_request

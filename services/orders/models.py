@@ -1,3 +1,4 @@
+#authentic_lebanese_sentiment_shop/services/orders/models.py
 from app import db
 from sqlalchemy.orm import validates
 from sqlalchemy import event

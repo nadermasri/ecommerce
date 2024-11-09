@@ -1,3 +1,4 @@
+#authentic_lebanese_sentiment_shop/database.py
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
