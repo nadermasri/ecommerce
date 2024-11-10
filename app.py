@@ -26,7 +26,7 @@ def create_app():
 
     # Initialize extensions with the app
     db.init_app(app)
-    csrf.init_app(app)
+    #csrf.init_app(app)
     login_manager.init_app(app)
     limiter.init_app(app)
     migrate.init_app(app, db)  # Initialize Migrate with app and db
@@ -44,18 +44,17 @@ def create_app():
     app.register_blueprint(orders_bp, url_prefix='/orders')
     app.register_blueprint(products_bp, url_prefix='/products')
     app.register_blueprint(reviews_bp, url_prefix='/reviews')
-    # app.register_blueprint(users_bp, url_prefix='/users')
-    app.register_blueprint(users_bp, url_prefix='/auth')
+    app.register_blueprint(users_bp, url_prefix='/user')
 
 
-    # Enhanced security headers
-    @app.after_request
-    def set_secure_headers(response):
-        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self';"
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        return response
+    # # Enhanced security headers
+    # @app.after_request
+    # def set_secure_headers(response):
+    #     response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self';"
+    #     response.headers['X-Content-Type-Options'] = 'nosniff'
+    #     response.headers['X-Frame-Options'] = 'DENY'
+    #     response.headers['X-XSS-Protection'] = '1; mode=block'
+    #     return response
 
     logger.info("Application initialized with enhanced security configurations.")
 

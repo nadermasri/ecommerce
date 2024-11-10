@@ -20,7 +20,7 @@ class Order(db.Model):
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
     # Relationships
-    user = db.relationship('User', backref='orders')
+    #user = db.relationship('User', backref='orders')
     items = db.relationship('OrderItem', backref='order', cascade='all, delete-orphan')
 
     def to_dict(self):
