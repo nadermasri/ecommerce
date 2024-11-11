@@ -1,6 +1,5 @@
 #authentic_lebanese_sentiment_shop/services/users/routes.py
 from flask import Blueprint, request, jsonify, abort, current_app
-from flask_login import login_required, current_user, login_user
 import smtplib
 from email.mime.text import MIMEText
 import jwt
@@ -8,10 +7,10 @@ from datetime import datetime, timedelta
 from app import db, limiter
 from .models import User, AdminUser, ActivityLog
 from .utils import validate_email, validate_password, is_email_exist, is_username_exist, validate_username
-import logging
+
 
 users_bp = Blueprint('users', __name__)
-logger = logging.getLogger(__name__)
+
 
 # Utility to create JWT token
 def create_jwt_token(user):
@@ -34,46 +33,65 @@ def verify_jwt(token):
     except jwt.InvalidTokenError:
         abort(401, "Invalid token, please log in")
 
+#To protect routes with JWT authentication
+def jwt_required(f):
+    def decorated_function(*args, **kwargs):
+        token = request.headers.get("Authorization")
+        if not token:
+            abort(401, "Token is missing")
+        token = token.split(" ")[1]  # Extract token part if format is "Bearer <token>"
+        payload = verify_jwt(token)
+        request.user_id = payload["user_id"]
+        request.user_role = payload.get("role")  # Only AdminUser will have a role
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+
 # Registration route for regular users
 @users_bp.route('/register', methods=['POST'])
 def register_user():
     data = request.json
-    required_fields = ['username', 'email', 'password']
-    for field in required_fields:
-        if field not in data:
-            abort(400, f"{field} is required")
+    try:
+        required_fields = ['username', 'email', 'password']
+        for field in required_fields:
+            if field not in data:
+                abort(400, f"{field} is required")
 
-    if not validate_email(data['email']):
-        return jsonify({"error": "Invalid email format"}), 400
+        if not validate_email(data['email']):
+            abort(400,"Invalid email format")
 
-    if not validate_password(data['password']):
-        return jsonify({"error": "Password does not meet complexity requirements"}), 400
-    
-    unvalidated, msg= validate_username(data['username'])
-    if unvalidated:
-        return msg
-    
-    if is_email_exist():
-        return jsonify({"error": "Email already exists"}), 400
-    
-    if is_username_exist():
-        return jsonify({"error": "Username already exists"}), 400
-    
+        if not validate_password(data['password']):
+            abort(400, "Password does not meet complexity requirements")
+        
+        unvalidated, msg= validate_username(data['username'])
+        if unvalidated:
+            return msg
+        
+        if is_email_exist(data['email']):
+            abort(400, "Email already exists")
+        
+        if is_username_exist(data['username']):
+            abort(400, "Username already exists")
+        
 
-    new_user = User(
-        username=data['username'],
-        email=data['email'],
-        membership_tier=data.get('membership_tier', 'Normal'),
-        address=data.get('address', ''),
-        phone_number=data.get('phone number', ''),
-        wishlist=data.get('wishlist', []),          
-        preferences=data.get('preferences', {})
-    )
+        new_user = User(
+            username=data['username'],
+            email=data['email'],
+            membership_tier=data.get('membership_tier', 'Normal'),
+            address=data.get('address', ''),
+            phone_number=data.get('phone number', ''),
+            wishlist=data.get('wishlist', []),          
+            preferences=data.get('preferences', {})
+        )
 
-    new_user.set_password(data['password'])  # Hash the password
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify(new_user.to_dict()), 201
+        new_user.set_password(data['password'])  # Hash the password
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify(new_user.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 # Login route for both regular users and admin users
 @users_bp.route('/login', methods=['POST'])
@@ -89,19 +107,6 @@ def login():
     else:
         return jsonify({"error": "Invalid credentials"}), 401
 
-#To protect routes with JWT authentication
-def jwt_required(f):
-    def decorated_function(*args, **kwargs):
-        token = request.headers.get("Authorization")
-        if not token:
-            abort(401, "Token is missing")
-        token = token.split(" ")[1]  # Extract token part if format is "Bearer <token>"
-        payload = verify_jwt(token)
-        request.user_id = payload["user_id"]
-        request.user_role = payload.get("role")  # Only AdminUser will have a role
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
 
 # Endpoint to create a new admin (SuperAdmin only)
 @users_bp.route('/admins/create', methods=['POST'])
@@ -111,17 +116,17 @@ def create_admin():
         abort(403, "Only SuperAdmin can create new admin accounts")
 
     data = request.json
-    allowed_roles = ['InventoryManager', 'OrderManager', 'CustomerSupport', 'SuperAdmin']
+    allowed_roles = ['InventoryManager', 'OrderManager', 'ProductManager', 'SuperAdmin']
     
-    role = data.get('role', 'CustomerSupport')  
-    if role not in allowed_roles:
+    role = data.get('role')  
+    if not role or role not in allowed_roles:
         abort(400, f"Invalid role. Allowed roles are: {', '.join(allowed_roles)}")
 
 
     admin = AdminUser(
         username=data['username'],
         email=data['email'],
-        role=data.get('role', 'CustomerSupport')
+        role=data.get('role')
     )
     admin.set_password(data['password'])
     db.session.add(admin)
@@ -139,7 +144,7 @@ def create_admin():
 @jwt_required
 def get_user_profile(user_id):
     user = User.query.get_or_404(user_id)
-    if request.user_id != user_id and (request.user_role != 'SuperAdmin' or request.user_role != 'CustomerSupport'):
+    if request.user_id != user_id and (request.user_role != 'SuperAdmin'):
         abort(403, "Unauthorized access")
     return jsonify(user.to_dict())
 
@@ -229,67 +234,11 @@ def get_activity_logs():
     if request.user_role != 'SuperAdmin':
         # SuperAdmin can access all logs
         logs = ActivityLog.query.all()
-    elif request.user_role != 'InventoryManager' or request.user_role != 'OrderManager' or request.user_role != 'CustomerSupport':
+    elif request.user_role != 'InventoryManager' or request.user_role != 'OrderManager' or request.user_role != 'ProductManager':
         # Other admin roles can only access their own activity logs
         logs = ActivityLog.query.filter_by(admin_id=request.user_id).all()
     else:
         return jsonify({"message": "You don't have access to perform this function"})
 
     return jsonify([log.to_dict() for log in logs])
-
-
-# # Customer Support Request with Rate Limiting --> this must go to customer support service 
-# @limiter.limit("5 per minute")  # Rate limit to 5 requests per minute
-# @users_bp.route('/support', methods=['POST'])
-# def customer_support():
-#     data = request.json
-#     email = data.get('email')
-#     subject = data.get('subject', 'Support Request').strip()
-#     message = data.get('message', '').strip()
-
-#     if not email or not message:
-#         abort(400, "Email and message are required")
-
-#     msg = MIMEText(message)
-#     msg['From'] = current_app.config['EMAIL_USER']
-#     msg['To'] = current_app.config['EMAIL_USER']
-#     msg['Subject'] = subject[:100]
-
-#     try:
-#         with smtplib.SMTP(current_app.config['EMAIL_HOST'], current_app.config['EMAIL_PORT']) as server:
-#             server.starttls()
-#             server.login(current_app.config['EMAIL_USER'], current_app.config['EMAIL_PASSWORD'])
-#             server.sendmail(current_app.config['EMAIL_USER'], current_app.config['EMAIL_USER'], msg.as_string())
-#         logger.info(f"Support request received from {email}")
-#         return jsonify({"message": "Support request received"}), 200
-#     except smtplib.SMTPException as e:
-#         logger.error(f"Failed to send support email: {e}")
-#         return jsonify({"error": "Failed to send support request"}), 500
-
-#customer management service --- needs updating 
-# @users_bp.route('/segmentation', methods=['GET'])
-# @login_required
-# def customer_segmentation():
-#     if not current_user.is_admin:
-#         abort(403, "Unauthorized action")
-
-#     all_users = User.query.all()
-#     segmentation = {
-#         'repeat_buyers': [user.to_dict() for user in all_users if user.orders.count() > 3],
-#         'high_spenders': [user.to_dict() for user in all_users if sum(order.total_price for order in user.orders) > 1000]
-#     }
-
-#     logger.info(f"Customer segmentation generated by admin {current_user.id}")
-
-#     return jsonify(segmentation)
-
-# @users_bp.route('/admin/activity_logs', methods=['GET'])
-# @login_required
-# def get_activity_logs():
-#     if not current_user.is_admin:
-#         abort(403, "Access denied")
-
-#     logs = ActivityLog.query.all()
-#     return jsonify([log.to_dict() for log in logs])
-
 

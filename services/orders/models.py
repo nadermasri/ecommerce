@@ -1,11 +1,8 @@
 #authentic_lebanese_sentiment_shop/services/orders/models.py
 from app import db
 from sqlalchemy.orm import validates
-from sqlalchemy import event
 from datetime import datetime
-import logging
 
-logger = logging.getLogger(__name__)
 
 class Order(db.Model):
     __tablename__ = 'orders'
@@ -20,7 +17,7 @@ class Order(db.Model):
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
     # Relationships
-    #user = db.relationship('User', backref='orders')
+    user = db.relationship('User', back_populates='orders')
     items = db.relationship('OrderItem', backref='order', cascade='all, delete-orphan')
 
     def to_dict(self):
@@ -56,7 +53,9 @@ class OrderItem(db.Model):
     price = db.Column(db.Numeric(10, 2), nullable=False)
 
     # Relationships
-    product = db.relationship('Product')
+    product = db.relationship('Product', back_populates='order_items')
+    returns = db.relationship('Return', backref='order_item', cascade='all, delete-orphan')
+
 
     @validates('quantity', 'price')
     def validate_positive_values(self, key, value):
@@ -75,14 +74,20 @@ class OrderItem(db.Model):
             "price": str(self.price)
         }
 
-# Event listener for audit logging
-@event.listens_for(Order, 'after_insert')
-@event.listens_for(Order, 'after_update')
-@event.listens_for(Order, 'after_delete')
-def log_order_changes(mapper, connection, target):
-    """Logs changes to Order model for auditing purposes."""
-    action = 'created' if hasattr(target, '_sa_instance_state') and target._sa_instance_state.key is None else 'updated'
-    if action == 'deleted':
-        logger.info(f"Order {target.id} was deleted")
-    else:
-        logger.info(f"Order {target.id} was {action} with data: {target.to_dict()}")
+class Return(db.Model):
+    __tablename__ = 'returns'
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_item_id = db.Column(db.Integer, db.ForeignKey('order_items.id', ondelete="CASCADE"), nullable=False)
+    reason = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.Enum('Pending', 'Approved', 'Denied'), default='Pending', nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_item_id": self.order_item_id,
+            "reason": self.reason,
+            "status": self.status,
+            "created_at": self.created_at
+        }

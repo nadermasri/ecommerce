@@ -48,12 +48,12 @@ def validate_username(username):
     Returns True if valid, raises a ValueError if invalid.
     """
     if not username:
-        return True, "Username cannot be empty."
+        return (True, "Username cannot be empty.")
     
     if " " in username:
-        return True, "Username cannot contain spaces."
+        return (True, "Username cannot contain spaces.")
     
-    return False
+    return (False,"")
     
 
 def is_username_exist(username):

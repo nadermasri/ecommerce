@@ -2,9 +2,7 @@
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import validates
-import logging
 
-logger = logging.getLogger(__name__)
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -22,7 +20,7 @@ class User(db.Model):
     preferences = db.Column(db.JSON)  # JSON field for storing user-specific settings
 
     # Relationship with orders
-    orders = db.relationship('Order', backref='user_orders', lazy=True)
+    orders = db.relationship('Order', back_populates='user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -50,7 +48,7 @@ class AdminUser(db.Model):
     username = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum('InventoryManager', 'OrderManager', 'CustomerSupport', 'SuperAdmin'), nullable=False)
+    role = db.Column(db.Enum('InventoryManager', 'OrderManager', 'ProductManager', 'SuperAdmin'), nullable=False)
 
     # Relationship with activity logs
     activity_logs = db.relationship('ActivityLog', backref='admin_activity_logs', lazy=True)
@@ -63,7 +61,7 @@ class AdminUser(db.Model):
 
     @property
     def is_admin(self):
-        return self.role in ['InventoryManager', 'OrderManager', 'CustomerSupport', 'SuperAdmin']
+        return self.role in ['InventoryManager', 'OrderManager', 'ProductManager', 'SuperAdmin']
     
     @property
     def is_super_admin(self):
@@ -82,7 +80,7 @@ class ActivityLog(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin_users.id'), nullable=False)
-    action = db.Column(db.String(255))
+    action = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=db.func.now())
 
     def __repr__(self):
