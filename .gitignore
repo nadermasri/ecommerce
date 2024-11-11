@@ -16,4 +16,4 @@ __pycache__/
 *.log
 
 # Ignore virtual environment
-venv/
+*.venv/
