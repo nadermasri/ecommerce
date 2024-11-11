@@ -6,6 +6,7 @@ from app import db
 from ..user_management.models import ActivityLog
 from .decorators import role_required, jwt_required
 from datetime import datetime
+from ..products.models import Product
 
 orders_bp = Blueprint('orders', __name__)
 
@@ -48,6 +49,17 @@ def create_order():
         
         # Add order items to the order
         for item in items:
+            product_id = item['product_id']
+            quantity = item['quantity']
+            
+            # Fetch the product to check stock
+            product = Product.query.get(product_id)
+            if not product or product.stock < quantity:
+                raise ValueError(f"Not enough stock for product ID {product_id}")
+            
+            # Decrease product stock
+            product.stock -= quantity
+
             order_item = OrderItem(
                 product_id=item['product_id'],
                 quantity=item['quantity'],

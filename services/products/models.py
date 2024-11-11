@@ -1,10 +1,7 @@
 #authentic_lebanese_sentiment_shop/services/products/models.py
 from app import db
 from sqlalchemy.orm import validates
-import logging
 
-# Initialize logger for audit logging
-logger = logging.getLogger(__name__)
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -52,13 +49,13 @@ class Product(db.Model):
     stock = db.Column(db.Integer, default=0)
     stock_threshold = db.Column(db.Integer, default=10)
     image = db.Column(db.String(255))  # Path or URL to the product image
-    storage_location = db.Column(db.String(255))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategories.id'), nullable=True) 
     created_at = db.Column(db.DateTime, default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
 
     order_items = db.relationship('OrderItem', back_populates='product', cascade='all, delete-orphan')
+    inventory_records = db.relationship('Inventory', back_populates='product', cascade='all, delete-orphan')
 
     def check_stock_level(self):
         return "Low Stock" if self.stock <= self.stock_threshold else "In Stock"
@@ -72,7 +69,6 @@ class Product(db.Model):
             "stock": self.stock,
             "stock_threshold": self.stock_threshold,
             "image": self.image,
-            "storage_location": self.storage_location,
             "category_id": self.category_id,
             "subcategory_id": self.subcategory_id,
             "created_at": self.created_at,

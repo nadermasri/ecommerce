@@ -39,7 +39,6 @@ def add_product():
             category_id=data['category_id'],
             subcategory_id=data.get('subcategory_id'), 
             image=data.get('image'),
-            storage_location=data.get('storage_location')
         )
         db.session.add(new_product)
         db.session.commit()
@@ -69,7 +68,6 @@ def update_product(product_id):
     product.stock = data.get('stock', product.stock)
     product.stock_threshold = data.get('stock_threshold', product.stock_threshold)
     product.image = data.get('image', product.image)
-    product.storage_location = data.get('storage_location', product.storage_location)
     product.subcategory_id = data.get('subcategory_id', product.subcategory_id)
 
     
@@ -127,7 +125,6 @@ def bulk_upload_products():
                 stock=int(row['stock']),
                 stock_threshold=int(row.get('stock_threshold', 10)), 
                 image=row.get('image'),
-                storage_location=row.get('storage_location'),
                 category_id=int(row['category_id']),
                 subcategory_id=int(row['subcategory_id']) if row.get('subcategory_id') else None
             )

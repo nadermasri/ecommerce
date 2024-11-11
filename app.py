@@ -39,10 +39,12 @@ def create_app():
     from services.orders.routes import orders_bp
     from services.products.routes import products_bp
     from services.user_management.routes import users_bp
+    from services.inventory.routes import inventory_bp
 
     app.register_blueprint(orders_bp, url_prefix='/orders')
     app.register_blueprint(products_bp, url_prefix='/products')
     app.register_blueprint(users_bp, url_prefix='/user')
+    app.register_blueprint(inventory_bp, url_prefix='/inventory')
 
 
     # # Enhanced security headers
