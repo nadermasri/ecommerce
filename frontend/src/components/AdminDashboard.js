@@ -4,7 +4,7 @@ import { Container, Tab, Tabs, Typography } from '@mui/material';
 import OrderManagement from './OrderManagement';
 import ProductManagement from './ProductManagement';
 import UserManagement from './UserManagement';
-import ReviewManagement from './ReviewManagement';
+import InventoryManagement from './InventoryManagement';
 import ActivityLog from './ActivityLog';
 function AdminDashboard() {
     const [tabIndex, setTabIndex] = React.useState(0);
@@ -26,7 +26,7 @@ function AdminDashboard() {
             {tabIndex === 0 && <UserManagement />}
             {tabIndex === 1 && <OrderManagement />}
             {tabIndex === 2 && <ProductManagement />}
-            {tabIndex === 3 && <ReviewManagement />} 
+            {tabIndex === 3 && <InventoryManagement />} 
             {tabIndex === 4 && <ActivityLog />} 
             {/* here no longer reviews add inventory */}
         </Container>
