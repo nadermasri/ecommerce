@@ -1,10 +1,8 @@
-//authentic_lebanese_sentiment_shop/frontend/src/components/ProductManagement.js
-
 // src/components/ProductManagement.js
 
 import React, { useEffect, useState } from 'react';
 import { getProducts } from '../services/productService';
-import { Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
+import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 
 function ProductManagement() {
     const [products, setProducts] = useState([]);
@@ -29,7 +27,6 @@ function ProductManagement() {
                         <TableCell>Description</TableCell>
                         <TableCell>Price</TableCell>
                         <TableCell>Stock</TableCell>
-                        <TableCell>Actions</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -40,10 +37,6 @@ function ProductManagement() {
                             <TableCell>{product.description}</TableCell>
                             <TableCell>{product.price}</TableCell>
                             <TableCell>{product.stock}</TableCell>
-                            <TableCell>
-                                <Button variant="contained" color="primary">Edit</Button>
-                                <Button variant="contained" color="secondary">Delete</Button>
-                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
