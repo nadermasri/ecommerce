@@ -8,7 +8,7 @@ from flask_limiter.util import get_remote_address
 from flask_migrate import Migrate  # Import Migrate
 from config import Config
 import logging
-
+from flask_cors import CORS
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ migrate = Migrate()  # Initialize the Migrate instance
 
 def create_app():
     app = Flask(__name__)
+    CORS(app)
     app.config.from_object(Config)
 
     # Initialize extensions with the app
