@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchUsers, deleteUser, updateUserProfile, fetchUserProfile } from '../services/userService';
+import { createAdmin } from '../services/adminService';
 
 function UserManagement() {
     const [users, setUsers] = useState([]);
@@ -13,9 +14,16 @@ function UserManagement() {
         preferences: {},
         password: ''
     });
-    const [searchUserId, setSearchUserId] = useState(''); // State for search input
-    const [searchedUser, setSearchedUser] = useState(null); // State for displaying searched user
+    const [searchUserId, setSearchUserId] = useState('');
+    const [searchedUser, setSearchedUser] = useState(null);
     const [error, setError] = useState(null);
+
+    const [newAdminData, setNewAdminData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        role: 'InventoryManager'
+    });
 
     useEffect(() => {
         const getUsers = async () => {
@@ -56,7 +64,7 @@ function UserManagement() {
         try {
             const user = await fetchUserProfile(searchUserId);
             setSearchedUser(user);
-            setError(null); // Clear any previous error
+            setError(null);
         } catch (err) {
             setSearchedUser(null);
             setError("User not found or unauthorized.");
@@ -87,6 +95,30 @@ function UserManagement() {
 
     const handleCancel = () => {
         resetForm();
+    };
+
+    const handleAdminInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewAdminData({ ...newAdminData, [name]: value });
+    };
+
+    const handleCreateAdmin = async (e) => {
+        e.preventDefault();
+        try {
+            await createAdmin(newAdminData.username, newAdminData.email, newAdminData.password, newAdminData.role);
+            alert("Admin created successfully!");
+            setNewAdminData({
+                username: '',
+                email: '',
+                password: '',
+                role: 'InventoryManager'
+            });
+        } catch (error) {
+            console.error("Failed to create admin:", error);
+            if (error.response) {
+                alert(`Backend error: ${error.response.data.error || error.response.data}`);
+            }
+        }
     };
 
     return (
@@ -203,6 +235,56 @@ function UserManagement() {
                     </form>
                 </div>
             )}
+
+            {/* Create New Admin Form */}
+            <h3>Create New Admin</h3>
+            <form onSubmit={handleCreateAdmin}>
+                <div>
+                    <label>Username:</label>
+                    <input
+                        type="text"
+                        name="username"
+                        value={newAdminData.username}
+                        onChange={handleAdminInputChange}
+                        required
+                    />
+                </div>
+                <div>
+                    <label>Email:</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={newAdminData.email}
+                        onChange={handleAdminInputChange}
+                        required
+                    />
+                </div>
+                <div>
+                    <label>Password:</label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={newAdminData.password}
+                        onChange={handleAdminInputChange}
+                        required
+                    />
+                </div>
+                <div>
+                    <label>Role:</label>
+                    <select
+                        name="role"
+                        value={newAdminData.role}
+                        onChange={handleAdminInputChange}
+                        required
+                    >
+                        <option value="InventoryManager">Inventory Manager</option>
+                        <option value="OrderManager">Order Manager</option>
+                        <option value="ProductManager">Product Manager</option>
+                        <option value="SuperAdmin">Super Admin</option>
+                    </select>
+                </div>
+                <button type="submit">Create Admin</button>
+            </form>
         </div>
     );
 }
