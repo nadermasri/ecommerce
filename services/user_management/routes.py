@@ -2,7 +2,8 @@
 from flask import Blueprint, request, jsonify, abort, current_app
 import smtplib
 from email.mime.text import MIMEText
-import jwt
+# import jwt
+import jwt as pyjwt
 from datetime import datetime, timedelta
 from app import db, limiter
 from .models import User, AdminUser, ActivityLog
@@ -20,17 +21,17 @@ def create_jwt_token(user):
         "role": getattr(user, 'role', None),  # Only AdminUser will have a role attribute
         "exp": datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
     }
-    token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm="HS256")
+    token = pyjwt.encode(payload, current_app.config['SECRET_KEY'], algorithm="HS256")
     return token
 
 # Decode and verify JWT
 def verify_jwt(token):
     try:
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        payload = pyjwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
         return payload
-    except jwt.ExpiredSignatureError:
+    except pyjwt.ExpiredSignatureError:
         abort(401, "Token expired, please log in again")
-    except jwt.InvalidTokenError:
+    except pyjwt.InvalidTokenError:
         abort(401, "Invalid token, please log in")
 
 #To protect routes with JWT authentication
