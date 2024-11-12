@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify, abort, current_app
 import smtplib
 from email.mime.text import MIMEText
-import jwt
+import jwt 
 from datetime import datetime, timedelta
 from app import db, limiter
 from .models import User, AdminUser, ActivityLog
@@ -101,6 +101,7 @@ def login():
     password = data.get("password")
 
     user = AdminUser.query.filter_by(username=username).first() or User.query.filter_by(username=username).first()
+
     if user and user.check_password(password):
         token = create_jwt_token(user)
         return jsonify({"message": "Login successful", "token": token}), 200
@@ -187,7 +188,7 @@ def update_user_profile(user_id):
     db.session.commit()
 
     # Only log if the user has an admin role
-    if request.user_role in ['SuperAdmin', 'Admin']:
+    if request.user_role in ['SuperAdmin']:
         action_details = f"Updated fields: {', '.join(changes)}"
         activity_log = ActivityLog(admin_id=request.user_id, action=f"Updated user profile {user_id}. {action_details}")
         db.session.add(activity_log)
