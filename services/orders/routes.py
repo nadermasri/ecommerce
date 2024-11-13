@@ -89,9 +89,12 @@ def create_order():
 
         return jsonify(new_order.to_dict()), 201
 
-    except Exception as e:
+    except ValueError as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to create order due to server error"}), 500
 
 
 
@@ -144,8 +147,15 @@ def update_order_info(order_id):
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Failed to update order info"}), 400
 
+
+# Restore stock function
+def restore_stock(order):
+    for item in order.items:
+        product = item.product
+        if product:
+            product.stock += item.quantity
 
 @orders_bp.route('/<int:order_id>', methods=['DELETE'])
 @jwt_required
@@ -153,22 +163,19 @@ def update_order_info(order_id):
 def delete_order(order_id):
     order = Order.query.get_or_404(order_id)
     try:
-        for item in order.items:
-            product = item.product
-            product.stock += item.quantity  # Restore stock
-
+        restore_stock(order)
         db.session.delete(order)
         db.session.commit()
 
-        # Log the deletion for audit purposes
         activity_log = ActivityLog(admin_id=request.user_id, action=f"Order {order_id} deleted by user {request.user_id}")
         db.session.add(activity_log)
         db.session.commit()
 
-        return jsonify({"message": "Order deleted"})
+        return jsonify({"message": "Order deleted"}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Failed to delete order due to server error"}), 500
+
 
 
 @orders_bp.route('/track/<int:order_id>', methods=['GET'])
@@ -184,7 +191,7 @@ def track_order(order_id):
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Failed to track order"}), 400
 
 
 
@@ -234,7 +241,7 @@ def return_item(order_id):
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Failed to return item."}), 400
 
 @orders_bp.route('/returns', methods=['GET'])
 @jwt_required
@@ -248,7 +255,7 @@ def get_all_returns():
         return jsonify({"returns": return_items}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Failed to fetch returns"}), 400
 
 
 @orders_bp.route('/returns/<int:return_id>', methods=['PUT'])
@@ -284,4 +291,4 @@ def update_return(return_id):
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Failed to update return."}), 400

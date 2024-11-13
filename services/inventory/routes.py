@@ -32,7 +32,7 @@ def view_all_inventory():
         return jsonify({"inventory": inventory_list}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Failed to process request."}), 500
 
 
 @inventory_bp.route('/add', methods=['POST'])
@@ -40,9 +40,14 @@ def view_all_inventory():
 @role_required(['SuperAdmin', 'InventoryManager'])
 def add_inventory():
     data = request.get_json()
-    product_id = data.get('product_id')
-    location = data.get('location')
-    stock_level = data.get('stock_level', 0)  
+    try:
+        product_id = int(data.get('product_id')) 
+        location = str(data.get('location')).strip()  
+        stock_level = int(data.get('stock_level', 0))  
+
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid input types"}), 400
+    
 
     try:
         # Check if the product exists
@@ -83,7 +88,7 @@ def add_inventory():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An error occurred while processing the request."}), 500
 
 
 @inventory_bp.route('/update_stock', methods=['POST'])
@@ -123,7 +128,7 @@ def update_stock():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Failed to process request."}), 500
 
 
 @inventory_bp.route('/low_stock_alerts', methods=['GET'])
@@ -131,26 +136,32 @@ def update_stock():
 @role_required(['SuperAdmin', 'InventoryManager'])
 def low_stock_alerts():
     try:
-        low_stock_products = Inventory.query.join(Product).filter(Inventory.stock_level <= Product.stock_threshold).all()
+        low_stock_products = db.session.query(Inventory)\
+            .join(Product, Inventory.product_id == Product.id)\
+            .filter(Inventory.stock_level <= Product.stock_threshold).all()
+            
         alerts = [{"product_id": item.product_id, "location": item.location, "stock_level": item.stock_level} for item in low_stock_products]
+        
         return jsonify({"low_stock_alerts": alerts}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Could not retrieve low stock alerts"}), 500
+
 
 @inventory_bp.route('/inventory_report', methods=['GET'])
 @jwt_required
 @role_required(['SuperAdmin', 'InventoryManager'])
 def inventory_report():
     try:
-        # Fetching inventory turnover data for a report
         report_data = db.session.query(Product.name, func.sum(OrderItem.quantity).label('total_sold'))\
-                                .join(OrderItem, OrderItem.product_id == Product.id)\
-                                .group_by(Product.name)\
-                                .order_by(desc('total_sold')).all()
+            .join(OrderItem, OrderItem.product_id == Product.id)\
+            .group_by(Product.name)\
+            .order_by(desc('total_sold')).all()
 
-        report = [{"product_name": item[0], "total_sold": item[1]} for item in report_data]
+        report = [{"product_name": item[0], "total_sold": int(item[1])} for item in report_data]
+        
         return jsonify({"inventory_report": report}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Could not generate inventory report"}), 500
+
