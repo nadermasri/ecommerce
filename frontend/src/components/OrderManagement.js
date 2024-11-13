@@ -1,32 +1,36 @@
+// src/components/OrderManagement.js
+
 import React, { useState, useEffect } from 'react';
-import { fetchOrders, createOrder, updateOrderInfo, deleteOrder } from '../services/orderService';
-import { TextField, Button, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Box, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { fetchOrders, createOrder, updateOrderInfo, deleteOrder, trackOrder, returnOrderItem } from '../services/orderService';
+import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Box, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 
 function OrderManagement() {
     const [orders, setOrders] = useState([]);
     const [newOrder, setNewOrder] = useState({
         user_id: '',
-        total_price: '',
         status: 'Pending',
         delivery_option: 'Standard',
-        items: [],
+        items: [{ product_id: '', quantity: '' }],
     });
     const [editingOrder, setEditingOrder] = useState(null);
     const [formData, setFormData] = useState({
-        user_id: '',
-        total_price: '',
         status: '',
-        delivery_option: ''
+        delivery_option: '',
     });
-    const [orderItems, setOrderItems] = useState([{ product_id: '', quantity: '', price: '' }]);
+    const [trackingOrder, setTrackingOrder] = useState(null);
+    const [returnData, setReturnData] = useState({ order_item_id: '', reason: '' });
 
     const statusOptions = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled'];
     const deliveryOptions = ['Standard', 'Express', 'In-Store Pickup'];
 
     useEffect(() => {
         const fetchAllOrders = async () => {
-            const data = await fetchOrders();
-            setOrders(data);
+            try {
+                const data = await fetchOrders();
+                setOrders(data);
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+            }
         };
         fetchAllOrders();
     }, []);
@@ -38,36 +42,35 @@ function OrderManagement() {
 
     const handleCreateOrder = async (e) => {
         e.preventDefault();
-        const orderData = { ...newOrder, items: orderItems };
-        await createOrder(orderData);
-        const data = await fetchOrders();  // Refresh orders list after creation
-        setOrders(data);
-        setNewOrder({
-            user_id: '',
-            total_price: '',
-            status: 'Pending',
-            delivery_option: 'Standard',
-            items: []
-        });
-        setOrderItems([{ product_id: '', quantity: '', price: '' }]);
+        try {
+            await createOrder(newOrder);
+            const data = await fetchOrders(); // Refresh orders list after creation
+            setOrders(data);
+            setNewOrder({
+                user_id: '',
+                status: 'Pending',
+                delivery_option: 'Standard',
+                items: [{ product_id: '', quantity: '' }],
+            });
+        } catch (error) {
+            console.error("Error creating order:", error);
+        }
     };
 
     const handleAddOrderItem = () => {
-        setOrderItems([...orderItems, { product_id: '', quantity: '', price: '' }]);
+        setNewOrder({ ...newOrder, items: [...newOrder.items, { product_id: '', quantity: '' }] });
     };
 
     const handleOrderItemChange = (index, e) => {
         const { name, value } = e.target;
-        const newItems = [...orderItems];
+        const newItems = [...newOrder.items];
         newItems[index][name] = value;
-        setOrderItems(newItems);
+        setNewOrder({ ...newOrder, items: newItems });
     };
 
     const handleOrderUpdate = (order) => {
         setEditingOrder(order);
         setFormData({
-            user_id: order.user_id,
-            total_price: order.total_price,
             status: order.status,
             delivery_option: order.delivery_option,
         });
@@ -81,32 +84,68 @@ function OrderManagement() {
     const handleSaveUpdate = async (e) => {
         e.preventDefault();
         if (editingOrder) {
-            await updateOrderInfo(editingOrder.id, formData);
-            const data = await fetchOrders();  // Refresh orders list after update
-            setOrders(data);
-            setEditingOrder(null);
-            setFormData({
-                user_id: '',
-                total_price: '',
-                status: '',
-                delivery_option: ''
-            });
+            try {
+                await updateOrderInfo(editingOrder.id, formData);
+                const data = await fetchOrders(); // Refresh orders list after update
+                setOrders(data);
+                setEditingOrder(null);
+                setFormData({
+                    status: '',
+                    delivery_option: '',
+                });
+            } catch (error) {
+                console.error("Error updating order:", error);
+            }
         }
     };
 
     const handleCancelUpdate = () => {
         setEditingOrder(null);
+        setFormData({
+            status: '',
+            delivery_option: '',
+        });
     };
 
     const handleDeleteOrder = async (orderId) => {
-        await deleteOrder(orderId);
-        const data = await fetchOrders();  // Refresh orders list after deletion
-        setOrders(data);
+        try {
+            await deleteOrder(orderId);
+            const data = await fetchOrders(); // Refresh orders list after deletion
+            setOrders(data);
+        } catch (error) {
+            console.error("Error deleting order:", error);
+        }
+    };
+
+    const handleTrackOrder = async (orderId) => {
+        try {
+            const trackedOrder = await trackOrder(orderId);
+            setTrackingOrder(trackedOrder.order);
+        } catch (error) {
+            console.error("Error tracking order:", error);
+        }
+    };
+
+    const handleReturnItem = async (orderId) => {
+        try {
+            await returnOrderItem(orderId, returnData);
+            setReturnData({ order_item_id: '', reason: '' });
+            alert("Return request created successfully");
+        } catch (error) {
+            console.error("Error returning order item:", error);
+        }
+    };
+
+    const handleReturnDataChange = (e) => {
+        const { name, value } = e.target;
+        setReturnData({ ...returnData, [name]: value });
     };
 
     return (
         <Container maxWidth="md">
-            <Typography variant="h4" align="center" gutterBottom>Order Management</Typography>
+            <Typography variant="h4" align="center" gutterBottom>
+                Order Management
+            </Typography>
 
             {/* Orders Table */}
             <Table>
@@ -135,33 +174,31 @@ function OrderManagement() {
                                 <Button variant="contained" color="secondary" onClick={() => handleDeleteOrder(order.id)}>
                                     Delete
                                 </Button>
+                                <Button variant="contained" color="info" onClick={() => handleTrackOrder(order.id)} sx={{ marginTop: 1 }}>
+                                    Track
+                                </Button>
+                                {/* <Button variant="contained" color="secondary" onClick={() => handleReturnItem(order.id)} sx={{ marginLeft: 1 }}>
+                                Return Item
+                                    </Button> */}
                             </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
 
+            {/* Display tracked order information */}
+            {trackingOrder && (
+                <Box marginTop={4}>
+                    <Typography variant="h6" gutterBottom>Tracked Order Details</Typography>
+                    <pre>{JSON.stringify(trackingOrder, null, 2)}</pre>
+                </Box>
+            )}
+
             {/* Update Order Form */}
             {editingOrder && (
                 <Box marginTop={4}>
                     <Typography variant="h6" gutterBottom>Update Order</Typography>
                     <form onSubmit={handleSaveUpdate}>
-                        <TextField
-                            label="User ID"
-                            name="user_id"
-                            value={formData.user_id}
-                            onChange={handleUpdateInputChange}
-                            fullWidth
-                            margin="normal"
-                        />
-                        <TextField
-                            label="Total Price"
-                            name="total_price"
-                            value={formData.total_price}
-                            onChange={handleUpdateInputChange}
-                            fullWidth
-                            margin="normal"
-                        />
                         <FormControl fullWidth margin="normal">
                             <InputLabel>Status</InputLabel>
                             <Select
@@ -215,15 +252,6 @@ function OrderManagement() {
                         margin="normal"
                         required
                     />
-                    <TextField
-                        label="Total Price"
-                        name="total_price"
-                        value={newOrder.total_price}
-                        onChange={handleInputChange}
-                        fullWidth
-                        margin="normal"
-                        required
-                    />
                     <FormControl fullWidth margin="normal">
                         <InputLabel>Status</InputLabel>
                         <Select
@@ -253,7 +281,7 @@ function OrderManagement() {
                         </Select>
                     </FormControl>
                     <Typography variant="subtitle1" gutterBottom>Order Items</Typography>
-                    {orderItems.map((item, index) => (
+                    {newOrder.items.map((item, index) => (
                         <Box display="flex" gap={2} key={index} marginBottom={2}>
                             <TextField
                                 label="Product ID"
@@ -271,14 +299,6 @@ function OrderManagement() {
                                 fullWidth
                                 required
                             />
-                            <TextField
-                                label="Price"
-                                name="price"
-                                value={item.price}
-                                onChange={(e) => handleOrderItemChange(index, e)}
-                                fullWidth
-                                required
-                            />
                         </Box>
                     ))}
                     <Button onClick={handleAddOrderItem} color="primary">Add Item</Button>
@@ -286,6 +306,30 @@ function OrderManagement() {
                         Create Order
                     </Button>
                 </form>
+            </Box>
+
+            {/* Return Order Item Form */}
+            <Box marginTop={4}>
+                <Typography variant="h6" gutterBottom>Return Order Item</Typography>
+                <TextField
+                    label="Order Item ID"
+                    name="order_item_id"
+                    value={returnData.order_item_id}
+                    onChange={handleReturnDataChange}
+                    fullWidth
+                    margin="normal"
+                />
+                <TextField
+                    label="Reason for Return"
+                    name="reason"
+                    value={returnData.reason}
+                    onChange={handleReturnDataChange}
+                    fullWidth
+                    margin="normal"
+                />
+                <Button variant="contained" color="secondary" onClick={() => handleReturnItem(editingOrder?.id)} fullWidth>
+                    Submit Return Request
+                </Button>
             </Box>
         </Container>
     );
