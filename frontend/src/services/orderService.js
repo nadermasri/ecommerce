@@ -8,3 +8,18 @@ export const getOrders = async () => {
     const response = await axios.get(`${apiUrl}/orders`);
     return response.data;
 };
+
+export const fetchOrders = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+        const response = await axios.get(`${apiUrl}/orders/`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        throw error;
+    }
+};

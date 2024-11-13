@@ -1,7 +1,7 @@
-// src/components/ActivityLogs.js
-
+//ecommerce/frontend/src/components/ActivityLog.js
 import React, { useState, useEffect } from 'react';
 import { fetchActivityLogs } from '../services/userService';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from '@mui/material';
 
 function ActivityLogs({ token }) {
     const [logs, setLogs] = useState([]);
@@ -22,28 +22,30 @@ function ActivityLogs({ token }) {
 
     return (
         <div>
-            <h2>Activity Logs</h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Admin ID</th>
-                        <th>Action</th>
-                        <th>Timestamp</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {logs.map((log) => (
-                        <tr key={log.id}>
-                            <td>{log.id}</td>
-                            <td>{log.admin_id}</td>
-                            <td>{log.action}</td>
-                            <td>{new Date(log.timestamp).toLocaleString()}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <Typography variant="h4" gutterBottom>Activity Logs</Typography>
+            {error && <Typography color="error">{error}</Typography>}
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>ID</TableCell>
+                            <TableCell>Admin ID</TableCell>
+                            <TableCell>Action</TableCell>
+                            <TableCell>Timestamp</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {logs.map((log) => (
+                            <TableRow key={log.id}>
+                                <TableCell>{log.id}</TableCell>
+                                <TableCell>{log.admin_id}</TableCell>
+                                <TableCell>{log.action}</TableCell>
+                                <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         </div>
     );
 }
