@@ -8,6 +8,9 @@ export const login = async (username, password) => {
     return response.data;
 };
 
+
 export const logout = () => {
-    // Clear token from local storage or perform any other logout operations.
+    // Clear the auth token from local storage to log the user out
+    localStorage.removeItem('authToken');
 };
+

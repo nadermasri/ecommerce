@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { updateUserProfile } from '../services/userService';
+import { TextField, Button, Typography, Box, Alert, Stack } from '@mui/material';
 
 function UserProfile({ userId }) {
     const [user, setUser] = useState({
@@ -17,7 +18,6 @@ function UserProfile({ userId }) {
     const [success, setSuccess] = useState(null);
 
     useEffect(() => {
-        // Fetch user profile data from the backend
         const fetchUserProfile = async () => {
             try {
                 const response = await fetchUsers(); // Fetch current user data
@@ -47,7 +47,7 @@ function UserProfile({ userId }) {
         try {
             const updatedUser = await updateUserProfile(userId, {
                 ...user,
-                wishlist: JSON.parse(user.wishlist), // Parse back to array/object
+                wishlist: JSON.parse(user.wishlist),
                 preferences: JSON.parse(user.preferences)
             });
             setUser({
@@ -56,92 +56,100 @@ function UserProfile({ userId }) {
                 preferences: JSON.stringify(updatedUser.preferences)
             });
             setSuccess("Profile updated successfully!");
+            setError(null);
         } catch (error) {
             setError("Failed to update profile. Please try again.");
+            setSuccess(null);
         }
     };
 
     return (
-        <div>
-            <h2>Edit Profile</h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {success && <p style={{ color: 'green' }}>{success}</p>}
+        <Box sx={{ maxWidth: 600, mx: 'auto', p: 4, boxShadow: 2, bgcolor: 'background.paper', borderRadius: 2 }}>
+            <Typography variant="h4" gutterBottom>
+                Edit Profile
+            </Typography>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
             <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Username:</label>
-                    <input
-                        type="text"
+                <Stack spacing={2}>
+                    <TextField
+                        label="Username"
+                        variant="outlined"
+                        fullWidth
                         name="username"
                         value={user.username}
                         onChange={handleChange}
                     />
-                </div>
-                <div>
-                    <label>Email:</label>
-                    <input
+                    <TextField
+                        label="Email"
+                        variant="outlined"
                         type="email"
+                        fullWidth
                         name="email"
                         value={user.email}
                         onChange={handleChange}
                     />
-                </div>
-                <div>
-                    <label>Address:</label>
-                    <input
-                        type="text"
+                    <TextField
+                        label="Address"
+                        variant="outlined"
+                        fullWidth
                         name="address"
                         value={user.address}
                         onChange={handleChange}
                     />
-                </div>
-                <div>
-                    <label>Phone Number:</label>
-                    <input
-                        type="text"
+                    <TextField
+                        label="Phone Number"
+                        variant="outlined"
+                        fullWidth
                         name="phone_number"
                         value={user.phone_number}
                         onChange={handleChange}
                     />
-                </div>
-                <div>
-                    <label>Membership Tier:</label>
-                    <input
-                        type="text"
+                    <TextField
+                        label="Membership Tier"
+                        variant="outlined"
+                        fullWidth
                         name="membership_tier"
                         value={user.membership_tier}
                         onChange={handleChange}
                     />
-                </div>
-                <div>
-                    <label>Wishlist (JSON):</label>
-                    <textarea
+                    <TextField
+                        label="Wishlist (JSON)"
+                        variant="outlined"
+                        fullWidth
                         name="wishlist"
                         value={user.wishlist}
                         onChange={handleChange}
+                        multiline
+                        rows={3}
                     />
-                </div>
-                <div>
-                    <label>Preferences (JSON):</label>
-                    <textarea
+                    <TextField
+                        label="Preferences (JSON)"
+                        variant="outlined"
+                        fullWidth
                         name="preferences"
                         value={user.preferences}
                         onChange={handleChange}
+                        multiline
+                        rows={3}
                     />
-                </div>
-                <div>
-                    <label>Password:</label>
-                    <input
+                    <TextField
+                        label="Password"
+                        variant="outlined"
                         type="password"
+                        fullWidth
                         name="password"
-                        value={user.password}
+                        value={user.password || ''}
                         onChange={handleChange}
                     />
-                </div>
-                <button type="submit">Save Changes</button>
+                    <Button type="submit" variant="contained" color="primary" fullWidth>
+                        Save Changes
+                    </Button>
+                </Stack>
             </form>
-        </div>
+        </Box>
     );
 }
-
 
 export default UserProfile;

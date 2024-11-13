@@ -1,7 +1,7 @@
-// src/components/InventoryManagement.js
-
+//ecommerce/inventory_management/src/components/InventoryManagement.js
 import React, { useEffect, useState } from 'react';
 import { updateStock, getLowStockAlerts, getInventoryReport } from '../services/inventoryService';
+import { TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, Container, Box, Typography } from '@mui/material';
 
 function InventoryManagement() {
     const [formData, setFormData] = useState({
@@ -22,7 +22,6 @@ function InventoryManagement() {
             const data = await getLowStockAlerts();
             setLowStockAlerts(data.low_stock_alerts);
         } catch (error) {
-            console.error("Failed to fetch low stock alerts:", error);
             alert("Failed to fetch low stock alerts.");
         }
     };
@@ -32,7 +31,6 @@ function InventoryManagement() {
             const data = await getInventoryReport();
             setInventoryReport(data.inventory_report);
         } catch (error) {
-            console.error("Failed to fetch inventory report:", error);
             alert("Failed to fetch inventory report.");
         }
     };
@@ -54,96 +52,98 @@ function InventoryManagement() {
             setFormData({ product_id: '', location: '', stock_level: '' });
             fetchLowStockAlerts(); // Refresh alerts after stock update
         } catch (error) {
-            console.error("Failed to update stock:", error);
-            if (error.response) {
-                alert(`Backend error: ${error.response.data.error}`);
-            }
+            alert("Failed to update stock.");
         }
     };
 
     return (
-        <div>
-            <h2>Update Inventory Stock</h2>
+        <Container maxWidth="md">
+            <Typography variant="h4" align="center" gutterBottom>Inventory Management</Typography>
             <form onSubmit={handleUpdateStock}>
-                <div>
-                    <label>Product ID:</label>
-                    <input
-                        type="number"
-                        name="product_id"
-                        value={formData.product_id}
-                        onChange={handleInputChange}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField 
+                        label="Product ID" 
+                        name="product_id" 
+                        type="number" 
+                        value={formData.product_id} 
+                        onChange={handleInputChange} 
+                        fullWidth 
                         required
                     />
-                </div>
-                <div>
-                    <label>Location:</label>
-                    <input
-                        type="text"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleInputChange}
+                    <TextField 
+                        label="Location" 
+                        name="location" 
+                        value={formData.location} 
+                        onChange={handleInputChange} 
+                        fullWidth 
                         required
                     />
-                </div>
-                <div>
-                    <label>Stock Level:</label>
-                    <input
-                        type="number"
-                        name="stock_level"
-                        value={formData.stock_level}
-                        onChange={handleInputChange}
+                    <TextField 
+                        label="Stock Level" 
+                        name="stock_level" 
+                        type="number" 
+                        value={formData.stock_level} 
+                        onChange={handleInputChange} 
+                        fullWidth 
                         required
                     />
-                </div>
-                <button type="submit">Update Stock</button>
+                    <Button 
+                        type="submit" 
+                        variant="contained" 
+                        color="primary" 
+                        fullWidth
+                    >
+                        Update Stock
+                    </Button>
+                </Box>
             </form>
 
-            <h3>Low Stock Alerts</h3>
+            <Typography variant="h5" sx={{ marginTop: 4 }}>Low Stock Alerts</Typography>
             {lowStockAlerts.length > 0 ? (
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Product ID</th>
-                            <th>Location</th>
-                            <th>Stock Level</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Product ID</TableCell>
+                            <TableCell>Location</TableCell>
+                            <TableCell>Stock Level</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
                         {lowStockAlerts.map((alert, index) => (
-                            <tr key={index}>
-                                <td>{alert.product_id}</td>
-                                <td>{alert.location}</td>
-                                <td>{alert.stock_level}</td>
-                            </tr>
+                            <TableRow key={index}>
+                                <TableCell>{alert.product_id}</TableCell>
+                                <TableCell>{alert.location}</TableCell>
+                                <TableCell>{alert.stock_level}</TableCell>
+                            </TableRow>
                         ))}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             ) : (
-                <p>No low stock alerts at the moment.</p>
+                <Typography>No low stock alerts at the moment.</Typography>
             )}
 
-            <h3>Inventory Report</h3>
+            <Typography variant="h5" sx={{ marginTop: 4 }}>Inventory Report</Typography>
             {inventoryReport.length > 0 ? (
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Product Name</th>
-                            <th>Total Sold</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Product Name</TableCell>
+                            <TableCell>Total Sold</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
                         {inventoryReport.map((report, index) => (
-                            <tr key={index}>
-                                <td>{report.product_name}</td>
-                                <td>{report.total_sold}</td>
-                            </tr>
+                            <TableRow key={index}>
+                                <TableCell>{report.product_name}</TableCell>
+                                <TableCell>{report.total_sold}</TableCell>
+                            </TableRow>
                         ))}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             ) : (
-                <p>No inventory report data available.</p>
+                <Typography>No inventory report data available.</Typography>
             )}
-        </div>
+        </Container>
     );
 }
 

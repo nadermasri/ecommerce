@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchUsers, deleteUser, updateUserProfile, fetchUserProfile } from '../services/userService';
 import { createAdmin } from '../services/adminService';
+import { TextField, Button, Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Box, Select, MenuItem } from '@mui/material';
 
 function UserManagement() {
     const [users, setUsers] = useState([]);
@@ -122,170 +123,179 @@ function UserManagement() {
     };
 
     return (
-        <div>
-            <h2>Manage Users</h2>
+        <Container maxWidth="md">
+            <Typography variant="h4" align="center" gutterBottom>Manage Users</Typography>
 
             {/* Search bar for finding specific users */}
-            <div>
-                <input
-                    type="text"
-                    placeholder="Enter User ID to Search"
+            <Box display="flex" alignItems="center" gap={2} marginBottom={2}>
+                <TextField
+                    label="Enter User ID to Search"
+                    variant="outlined"
                     value={searchUserId}
                     onChange={handleSearchInputChange}
+                    fullWidth
                 />
-                <button onClick={handleSearchUser}>Search</button>
-            </div>
+                <Button variant="contained" onClick={handleSearchUser} color="primary">Search</Button>
+            </Box>
 
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {error && <Typography color="error" align="center">{error}</Typography>}
 
             {/* Display searched user if found */}
             {searchedUser && (
-                <div>
-                    <h3>Search Result</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Membership Tier</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>{searchedUser.id}</td>
-                                <td>{searchedUser.username}</td>
-                                <td>{searchedUser.email}</td>
-                                <td>{searchedUser.membership_tier}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <Box marginBottom={2}>
+                    <Typography variant="h6">Search Result</Typography>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>ID</TableCell>
+                                <TableCell>Username</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Membership Tier</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell>{searchedUser.id}</TableCell>
+                                <TableCell>{searchedUser.username}</TableCell>
+                                <TableCell>{searchedUser.email}</TableCell>
+                                <TableCell>{searchedUser.membership_tier}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </Box>
             )}
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Membership Tier</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
+            {/* Users Table */}
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>ID</TableCell>
+                        <TableCell>Username</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell>Membership Tier</TableCell>
+                        <TableCell>Actions</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
                     {users.map(user => (
-                        <tr key={user.id}>
-                            <td>{user.id}</td>
-                            <td>{user.username}</td>
-                            <td>{user.email}</td>
-                            <td>{user.membership_tier}</td>
-                            <td>
-                                <button onClick={() => handleEdit(user)}>Update</button>
-                                <button onClick={() => handleDelete(user.id)}>Delete</button>
-                            </td>
-                        </tr>
+                        <TableRow key={user.id}>
+                            <TableCell>{user.id}</TableCell>
+                            <TableCell>{user.username}</TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>{user.membership_tier}</TableCell>
+                            <TableCell>
+                                <Button variant="contained" color="primary" onClick={() => handleEdit(user)} sx={{ marginRight: 1 }}>
+                                    Update
+                                </Button>
+                                <Button variant="contained" color="secondary" onClick={() => handleDelete(user.id)}>
+                                    Delete
+                                </Button>
+                            </TableCell>
+                        </TableRow>
                     ))}
-                </tbody>
-            </table>
+                </TableBody>
+            </Table>
 
             {/* Update User Form */}
             {editingUser && (
-                <div>
-                    <h3>Update User</h3>
+                <Box marginTop={4}>
+                    <Typography variant="h6" gutterBottom>Update User</Typography>
                     <form onSubmit={handleUpdate}>
-                        <div>
-                            <label>Username:</label>
-                            <input
-                                type="text"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-                        <div>
-                            <label>Email:</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-                        <div>
-                            <label>Address:</label>
-                            <input
-                                type="text"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-                        <div>
-                            <label>Membership Tier:</label>
-                            <input
-                                type="text"
-                                name="membership_tier"
-                                value={formData.membership_tier}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-                        <button type="submit">Save Changes</button>
-                        <button type="button" onClick={handleCancel}>Cancel</button>
+                        <TextField
+                            label="Username"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <TextField
+                            label="Email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <TextField
+                            label="Address"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <TextField
+                            label="Membership Tier"
+                            name="membership_tier"
+                            value={formData.membership_tier}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                        />
+                        <Box display="flex" gap={2} marginTop={2}>
+                            <Button variant="contained" color="primary" type="submit" fullWidth>
+                                Save Changes
+                            </Button>
+                            <Button variant="outlined" color="secondary" onClick={handleCancel} fullWidth>
+                                Cancel
+                            </Button>
+                        </Box>
                     </form>
-                </div>
+                </Box>
             )}
 
             {/* Create New Admin Form */}
-            <h3>Create New Admin</h3>
-            <form onSubmit={handleCreateAdmin}>
-                <div>
-                    <label>Username:</label>
-                    <input
-                        type="text"
+            <Box marginTop={4}>
+                <Typography variant="h6" gutterBottom>Create New Admin</Typography>
+                <form onSubmit={handleCreateAdmin}>
+                    <TextField
+                        label="Username"
                         name="username"
                         value={newAdminData.username}
                         onChange={handleAdminInputChange}
+                        fullWidth
+                        margin="normal"
                         required
                     />
-                </div>
-                <div>
-                    <label>Email:</label>
-                    <input
-                        type="email"
+                    <TextField
+                        label="Email"
                         name="email"
                         value={newAdminData.email}
                         onChange={handleAdminInputChange}
+                        fullWidth
+                        margin="normal"
                         required
                     />
-                </div>
-                <div>
-                    <label>Password:</label>
-                    <input
-                        type="password"
+                    <TextField
+                        label="Password"
                         name="password"
                         value={newAdminData.password}
                         onChange={handleAdminInputChange}
+                        type="password"
+                        fullWidth
+                        margin="normal"
                         required
                     />
-                </div>
-                <div>
-                    <label>Role:</label>
-                    <select
+                    <Select
                         name="role"
                         value={newAdminData.role}
                         onChange={handleAdminInputChange}
+                        fullWidth
+                        margin="normal"
                         required
                     >
-                        <option value="InventoryManager">Inventory Manager</option>
-                        <option value="OrderManager">Order Manager</option>
-                        <option value="ProductManager">Product Manager</option>
-                        <option value="SuperAdmin">Super Admin</option>
-                    </select>
-                </div>
-                <button type="submit">Create Admin</button>
-            </form>
-        </div>
+                        <MenuItem value="InventoryManager">Inventory Manager</MenuItem>
+                        <MenuItem value="OrderManager">Order Manager</MenuItem>
+                        <MenuItem value="ProductManager">Product Manager</MenuItem>
+                        <MenuItem value="SuperAdmin">Super Admin</MenuItem>
+                    </Select>
+                    <Button variant="contained" color="primary" type="submit" fullWidth sx={{ marginTop: 2 }}>
+                        Create Admin
+                    </Button>
+                </form>
+            </Box>
+        </Container>
     );
 }
 
