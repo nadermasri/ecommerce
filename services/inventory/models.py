@@ -11,3 +11,7 @@ class Inventory(db.Model):
 
     # Relationship to Product
     product = db.relationship('Product', back_populates='inventory_records')
+
+
+
+

@@ -11,6 +11,81 @@ from sqlalchemy import func, desc
 
 inventory_bp = Blueprint('inventory', __name__)
 
+@inventory_bp.route('/all', methods=['GET'])
+@jwt_required
+@role_required(['SuperAdmin', 'InventoryManager'])
+def view_all_inventory():
+    try:
+        inventory_records = Inventory.query.all()
+        
+        inventory_list = [
+            {
+                "id": record.id,
+                "product_id": record.product_id,
+                "location": record.location,
+                "stock_level": record.stock_level,
+                "last_updated": record.last_updated
+            }
+            for record in inventory_records
+        ]
+        
+        return jsonify({"inventory": inventory_list}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@inventory_bp.route('/add', methods=['POST'])
+@jwt_required
+@role_required(['SuperAdmin', 'InventoryManager'])
+def add_inventory():
+    data = request.get_json()
+    product_id = data.get('product_id')
+    location = data.get('location')
+    stock_level = data.get('stock_level', 0)  
+
+    try:
+        # Check if the product exists
+        product = Product.query.get(product_id)
+        if not product:
+            return jsonify({"message": "Product not found"}), 404
+
+        # Check if an inventory record for this product and location already exists
+        existing_inventory = Inventory.query.filter_by(product_id=product_id, location=location).first()
+        if existing_inventory:
+            return jsonify({"message": "Inventory record for this product and location already exists"}), 400
+
+        # Create a new Inventory record
+        new_inventory = Inventory(
+            product_id=product_id,
+            location=location,
+            stock_level=stock_level
+        )
+        db.session.add(new_inventory)
+        
+        # Update the product's total stock to include the new inventory stock level
+        total_stock_level = db.session.query(db.func.sum(Inventory.stock_level)).filter_by(product_id=product_id).scalar()
+        product.stock = total_stock_level
+
+        
+        db.session.commit()
+
+        
+        activity_log = ActivityLog(admin_id=request.user_id, action=f"New inventory added by admin {request.user_id}")
+        db.session.add(activity_log)
+        db.session.commit()
+
+        return jsonify({"message": "Inventory added successfully", "inventory": {
+            "product_id": product_id,
+            "location": location,
+            "stock_level": stock_level
+        }}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
 @inventory_bp.route('/update_stock', methods=['POST'])
 @jwt_required
 @role_required(['SuperAdmin', 'InventoryManager'])
@@ -25,15 +100,21 @@ def update_stock():
         inventory_record = Inventory.query.filter_by(product_id=product_id, location=location).first()
 
         if not inventory_record:
-            inventory_record = Inventory(product_id=product_id, location=location, stock_level=new_stock_level)
-            db.session.add(inventory_record)
+            return jsonify({"message": "Inventory Item Not Found"}), 400
         else:
             inventory_record.stock_level = new_stock_level
+
+        # Update the Product's stock level
+            product = Product.query.get(product_id)
+            if product:
+                # Aggregate the total stock level across all inventory locations for this product
+                total_stock_level = db.session.query(db.func.sum(Inventory.stock_level)).filter_by(product_id=product_id).scalar()
+                product.stock = total_stock_level
 
         db.session.commit()
 
         # Log the inventory additon 
-        activity_log = ActivityLog(admin_id=request.user_id, action=f"New inventory added/updated by admin {request.user_id}")
+        activity_log = ActivityLog(admin_id=request.user_id, action=f"New inventory updated by admin {request.user_id}")
         db.session.add(activity_log)
         db.session.commit()
 

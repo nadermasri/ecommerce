@@ -227,6 +227,62 @@ def delete_user(user_id):
     
     return jsonify({"message": "User deleted"})
 
+# Get all admins (SuperAdmin-only)
+@users_bp.route('/admins', methods=['GET'])
+@jwt_required
+def get_all_admin_users():
+    if request.user_role != 'SuperAdmin':
+        abort(403, "Access denied. Only SuperAdmin can access all users.")
+
+    admin_users = AdminUser.query.all()
+
+    return jsonify([admin_user.to_dict() for admin_user in admin_users]), 200
+
+@users_bp.route('/admins/<int:user_id>', methods=['PUT'])
+@jwt_required
+def update_admin_user(user_id):
+    if request.user_role != 'SuperAdmin':
+        abort(403, "Access denied. Only SuperAdmin can access all users.")
+    data = request.json
+    admin_user = AdminUser.query.get_or_404(user_id)
+
+    # Update allowed fields
+    if 'username' in data:
+        admin_user.username = data['username']
+    if 'email' in data:
+        admin_user.email = data['email']
+    if 'role' in data:
+        if data['role'] not in ['InventoryManager', 'OrderManager', 'ProductManager', 'SuperAdmin']:
+            return jsonify({"error": "Invalid role"}), 400
+        admin_user.role = data['role']
+    if 'password' in data:
+        admin_user.set_password(data['password'])
+
+    db.session.commit()
+
+    activity_log = ActivityLog(admin_id=request.user_id, action=f"Updated admin {user_id}")
+    db.session.add(activity_log)
+    db.session.commit()
+
+    return jsonify(admin_user.to_dict()), 200
+
+
+@users_bp.route('/admins/<int:user_id>', methods=['DELETE'])
+@jwt_required
+def delete_admin_user(user_id):
+    if request.user_role != 'SuperAdmin':
+        abort(403, "Access denied. Only SuperAdmin can access all users.")
+        
+    admin_user = AdminUser.query.get_or_404(user_id)
+    db.session.delete(admin_user)
+    db.session.commit()
+
+    activity_log = ActivityLog(admin_id=request.user_id, action=f"Deleted admin {user_id}")
+    db.session.add(activity_log)
+    db.session.commit()
+
+    return jsonify({"message": "Admin user deleted successfully"}), 200
+
 
 # Get activity logs (restricted based on admin role)
 @users_bp.route('/admin/activity_logs', methods=['GET'])
