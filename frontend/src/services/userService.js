@@ -84,3 +84,50 @@ export const createAdmin = async (username, email, password, role) => {
     );
     return response.data;
 };
+
+export const fetchAdminUsers = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+        const response = await axios.get(`${apiUrl}/user/admins`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching admin users:', error);
+        throw error;
+    }
+};
+
+// Update admin user function
+export const updateAdminUser = async (userId, updatedData) => {
+    const token = localStorage.getItem('authToken');
+    try {
+        const response = await axios.put(`${apiUrl}/user/admins/${userId}`, updatedData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error updating admin user:", error);
+        throw error;
+    }
+};
+
+// Delete admin user function
+export const deleteAdminUser = async (userId) => {
+    const token = localStorage.getItem('authToken');
+    try {
+        const response = await axios.delete(`${apiUrl}/user/admins/${userId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting admin user:", error);
+        throw error;
+    }
+};

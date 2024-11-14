@@ -5,7 +5,8 @@ from email.mime.text import MIMEText
 # import jwt
 import jwt as pyjwt
 from datetime import datetime, timedelta
-from app import db, limiter
+from app import db
+# , limiter
 from .models import User, AdminUser, ActivityLog
 from .utils import validate_email, validate_password, is_email_exist, is_username_exist, validate_username
 

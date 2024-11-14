@@ -4,40 +4,67 @@ import axios from 'axios';
 
 const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
 
-// Add a function to fetch orders with the authorization token
 export const fetchOrders = async () => {
-    const token = localStorage.getItem('authToken'); // Retrieve JWT token from local storage
-
+    const token = localStorage.getItem('authToken');
     const response = await axios.get(`${apiUrl}/orders/`, {
         headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
 };
+
+// New function to create an order
 export const createOrder = async (orderData) => {
     const token = localStorage.getItem('authToken');
-    const response = await axios.post(`${apiUrl}/orders/`, orderData, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
+    {
+        const response = await axios.post(`${apiUrl}/orders/`, orderData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.data;
+    } 
+};
+
+
+export const updateOrderInfo = async (orderId, updateData) => {
+    const token = localStorage.getItem('authToken');
+    
+    const response = await axios.put(`${apiUrl}/orders/${orderId}/update_info`, updateData, {
+        headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
 };
 
-export const updateOrderInfo = async (orderId, orderData) => {
-    const token = localStorage.getItem('authToken'); // Retrieve the auth token
-    const response = await axios.put(`${apiUrl}/orders/${orderId}/update_info`, orderData, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
-    return response.data;
-};
-
+// Delete order function
 export const deleteOrder = async (orderId) => {
     const token = localStorage.getItem('authToken');
     const response = await axios.delete(`${apiUrl}/orders/${orderId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+};
+
+export const trackOrder = async (orderId) => {
+    const token = localStorage.getItem('authToken');
+    try {
+        const response = await axios.get(`${apiUrl}/orders/track/${orderId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error tracking order:", error);
+        throw error;
+    }
+};
+
+
+export const returnOrderItem = async (orderId, returnData) => {
+    const token = localStorage.getItem('authToken');
+    const response = await axios.post(`${apiUrl}/orders/${orderId}/return_item`, returnData, {
+        headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
 };
