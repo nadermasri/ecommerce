@@ -9,7 +9,9 @@ export const updateStock = async (product_id, location, stock_level) => {
     const response = await axios.post(
         `${apiUrl}/inventory/update_stock`,
         { product_id, location, stock_level },
-        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+        {
+            headers: { Authorization: `Bearer ${token}` },
+        }
     );
     return response.data;
 };
