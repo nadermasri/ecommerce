@@ -1,7 +1,6 @@
 // src/components/UserProfile.js
-
 import React, { useState, useEffect } from 'react';
-import { updateUserProfile } from '../services/userService';
+import { updateUserProfile, fetchUsers } from '../services/userService';
 import { TextField, Button, Typography, Box, Alert, Stack } from '@mui/material';
 
 function UserProfile({ userId }) {
@@ -11,8 +10,9 @@ function UserProfile({ userId }) {
         address: '',
         phone_number: '',
         membership_tier: '',
-        wishlist: [],
-        preferences: {}
+        wishlist: '[]', // Default as JSON string
+        preferences: '{}', // Default as JSON string
+        password: ''
     });
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
@@ -20,13 +20,13 @@ function UserProfile({ userId }) {
     useEffect(() => {
         const fetchUserProfile = async () => {
             try {
-                const response = await fetchUsers(); // Fetch current user data
-                const currentUser = response.find(u => u.id === userId);
+                const response = await fetchUsers();
+                const currentUser = response.find((u) => u.id === userId);
                 if (currentUser) {
                     setUser({
                         ...currentUser,
-                        wishlist: JSON.stringify(currentUser.wishlist), // Convert to JSON string
-                        preferences: JSON.stringify(currentUser.preferences) // Convert to JSON string
+                        wishlist: JSON.stringify(currentUser.wishlist), // Store as JSON string
+                        preferences: JSON.stringify(currentUser.preferences) // Store as JSON string
                     });
                 }
             } catch (error) {
@@ -42,19 +42,38 @@ function UserProfile({ userId }) {
         setUser((prevUser) => ({ ...prevUser, [name]: value }));
     };
 
+    const validateJSONField = (fieldValue) => {
+        try {
+            JSON.parse(fieldValue);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Validate JSON fields
+        if (!validateJSONField(user.wishlist) || !validateJSONField(user.preferences)) {
+            setError("Invalid JSON format in Wishlist or Preferences.");
+            setSuccess(null);
+            return;
+        }
+
         try {
             const updatedUser = await updateUserProfile(userId, {
                 ...user,
-                wishlist: JSON.parse(user.wishlist),
-                preferences: JSON.parse(user.preferences)
+                wishlist: JSON.parse(user.wishlist), // Parse JSON string
+                preferences: JSON.parse(user.preferences) // Parse JSON string
             });
+
             setUser({
                 ...updatedUser,
-                wishlist: JSON.stringify(updatedUser.wishlist),
-                preferences: JSON.stringify(updatedUser.preferences)
+                wishlist: JSON.stringify(updatedUser.wishlist), // Store as JSON string
+                preferences: JSON.stringify(updatedUser.preferences) // Store as JSON string
             });
+
             setSuccess("Profile updated successfully!");
             setError(null);
         } catch (error) {
@@ -80,6 +99,7 @@ function UserProfile({ userId }) {
                         name="username"
                         value={user.username}
                         onChange={handleChange}
+                        required
                     />
                     <TextField
                         label="Email"
@@ -89,6 +109,7 @@ function UserProfile({ userId }) {
                         name="email"
                         value={user.email}
                         onChange={handleChange}
+                        required
                     />
                     <TextField
                         label="Address"
@@ -123,6 +144,8 @@ function UserProfile({ userId }) {
                         onChange={handleChange}
                         multiline
                         rows={3}
+                        error={!validateJSONField(user.wishlist)}
+                        helperText={!validateJSONField(user.wishlist) ? "Invalid JSON format" : ""}
                     />
                     <TextField
                         label="Preferences (JSON)"
@@ -133,6 +156,8 @@ function UserProfile({ userId }) {
                         onChange={handleChange}
                         multiline
                         rows={3}
+                        error={!validateJSONField(user.preferences)}
+                        helperText={!validateJSONField(user.preferences) ? "Invalid JSON format" : ""}
                     />
                     <TextField
                         label="Password"
@@ -142,6 +167,7 @@ function UserProfile({ userId }) {
                         name="password"
                         value={user.password || ''}
                         onChange={handleChange}
+                        autoComplete="new-password"
                     />
                     <Button type="submit" variant="contained" color="primary" fullWidth>
                         Save Changes

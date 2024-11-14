@@ -10,13 +10,34 @@ function CreateAdminForm() {
     const [role, setRole] = useState('');
     const [message, setMessage] = useState('');
 
+    // Regular expression to enforce username format: only alphanumeric, no spaces or special characters
+    const usernameRegex = /^[a-zA-Z0-9]+$/;
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Check if all fields are filled
+        if (!username || !email || !password || !role) {
+            setMessage("All fields are required.");
+            return;
+        }
+
+        // Validate username
+        if (!usernameRegex.test(username)) {
+            setMessage("Username can only contain letters and numbers, with no spaces or special characters.");
+            return;
+        }
+
+        // Basic sanitization to prevent XSS attacks (use a library like DOMPurify in production)
+        const sanitizedUsername = username.replace(/[<>]/g, "");
+        const sanitizedEmail = email.replace(/[<>]/g, "");
+        const sanitizedRole = role.replace(/[<>]/g, "");
+
         try {
-            const data = await createAdmin(username, email, password, role);
+            const data = await createAdmin(sanitizedUsername, sanitizedEmail, password, sanitizedRole);
             setMessage(data.message);  // Display success message
         } catch (error) {
-            setMessage("Failed to create admin: " + error.response?.data?.error || error.message);
+            setMessage("Failed to create admin: " + (error.response?.data?.error || error.message));
         }
     };
 
@@ -32,6 +53,8 @@ function CreateAdminForm() {
                         onChange={(e) => setUsername(e.target.value)} 
                         margin="normal"
                         required
+                        inputProps={{ maxLength: 30 }} // Limit username length
+                        helperText="Username can only contain letters and numbers, with no spaces or special characters."
                     />
                     <TextField 
                         label="Email" 
@@ -40,6 +63,7 @@ function CreateAdminForm() {
                         onChange={(e) => setEmail(e.target.value)} 
                         margin="normal"
                         required
+                        inputProps={{ type: 'email', maxLength: 50 }} // Validate email input and limit length
                     />
                     <TextField 
                         label="Password" 
@@ -49,6 +73,7 @@ function CreateAdminForm() {
                         onChange={(e) => setPassword(e.target.value)} 
                         margin="normal"
                         required
+                        inputProps={{ minLength: 8 }} // Enforce minimum password length for security
                     />
                     <Select
                         label="Role"

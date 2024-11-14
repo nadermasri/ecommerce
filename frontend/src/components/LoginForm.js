@@ -12,31 +12,46 @@ function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
+    // Handler for logging in
     const handleLogin = async () => {
-        setError('');
+        setError(''); // Reset error message before each attempt
+
+        // Simple input validation to ensure both fields are filled
         if (!username || !password) {
-            setError('Please enter both username and password');
+            setError('Please enter both username and password'); // Prevents empty submissions
             return;
         }
 
-        setLoading(true);
+        setLoading(true); // Show loading spinner to prevent multiple submissions
+
         try {
+            // Attempt login with provided credentials
             const data = await login(username, password);
+
+            // Store token securely in local storage
+            // Storing the auth token allows secured API requests in future sessions
             localStorage.setItem('authToken', data.token);
+
+            // Redirect to protected dashboard after successful login
             navigate('/dashboard');
         } catch (error) {
-            setError('Login failed. Please try again.');
+            // Display a generic error to avoid revealing sensitive information
+            setError('Login failed. Please try again.'); // Avoids exposure of login failure details
         } finally {
-            setLoading(false);
+            setLoading(false); // Hide loading spinner after response
         }
     };
 
+    // Toggle visibility for password input
     const handleClickShowPassword = () => setShowPassword(!showPassword);
+
+    // Prevent default action on password input mouse down
     const handleMouseDownPassword = (event) => event.preventDefault();
 
+    // Allow login with the "Enter" key
     const handleKeyPress = (event) => {
         if (event.key === 'Enter') {
-            handleLogin();
+            handleLogin(); // Supports accessibility for keyboard users
         }
     };
 
@@ -44,7 +59,8 @@ function LoginForm() {
         <Container maxWidth="xs" style={styles.container}>
             <Typography variant="h4" align="center" style={styles.header}>Admin Login</Typography>
             <div style={styles.inputContainer}>
-                {/* Username input with FormControl and OutlinedInput */}
+
+                {/* Username input with validation to ensure required fields are filled */}
                 <FormControl fullWidth variant="outlined" margin="normal">
                     <InputLabel htmlFor="username" style={styles.inputLabel}>Username</InputLabel>
                     <OutlinedInput
@@ -52,8 +68,8 @@ function LoginForm() {
                         label="Username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        onKeyPress={handleKeyPress}  // Add onKeyPress here
-                        error={!!error}
+                        onKeyPress={handleKeyPress}  // Allow login with Enter key
+                        error={!!error} // Shows error highlight if there's a login issue
                         startAdornment={
                             <InputAdornment position="start">
                                 <AccountCircle />
@@ -63,21 +79,21 @@ function LoginForm() {
                     />
                 </FormControl>
 
-                {/* Password input with FormControl and OutlinedInput */}
+                {/* Password input with secure features */}
                 <FormControl fullWidth variant="outlined" margin="normal">
                     <InputLabel htmlFor="password" style={styles.inputLabel}>Password</InputLabel>
                     <OutlinedInput
                         id="password"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword ? 'text' : 'password'} // Toggles between hidden and visible password
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        onKeyPress={handleKeyPress}  // Add onKeyPress here
+                        onKeyPress={handleKeyPress}
                         endAdornment={
                             <InputAdornment position="end">
                                 <Button
-                                    aria-label="toggle password visibility"
-                                    onClick={handleClickShowPassword}
-                                    onMouseDown={handleMouseDownPassword}
+                                    aria-label="toggle password visibility" // Accessibility label
+                                    onClick={handleClickShowPassword} // Securely toggle password visibility
+                                    onMouseDown={handleMouseDownPassword} // Prevent focus shift on button click
                                     edge="end"
                                     style={styles.eyeIcon}
                                 >
@@ -86,24 +102,28 @@ function LoginForm() {
                             </InputAdornment>
                         }
                         label="Password"
-                        error={!!error}
+                        error={!!error} // Error highlight for login issues
                         style={styles.textField}
                     />
                 </FormControl>
 
+                {/* Display error message for login issues */}
                 {error && <Typography variant="body2" color="error" style={styles.errorText}>{error}</Typography>}
                 
+                {/* Login button with loading indicator */}
                 <Button
                     variant="contained"
                     color="primary"
                     fullWidth
                     onClick={handleLogin}
                     style={styles.loginButton}
-                    disabled={loading}
+                    disabled={loading} // Disables button while loading to prevent multiple submissions
                 >
                     {loading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
                 </Button>
             </div>
+
+            {/* Placeholder for "Forgot password?" functionality */}
             <div style={styles.forgot}>
                 <a href="#" style={styles.forgotLink}>Forgot password?</a>
             </div>
@@ -111,6 +131,7 @@ function LoginForm() {
     );
 }
 
+// Styling for the component elements
 const styles = {
     container: {
         background: 'linear-gradient(135deg, #2f4b7c, #596e88)',

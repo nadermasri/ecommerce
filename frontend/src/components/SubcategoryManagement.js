@@ -1,7 +1,25 @@
+//components/SubcategoryManagement.js
 import React, { useState, useEffect } from 'react';
 import { fetchSubcategories, createSubcategory, deleteSubcategory } from '../services/subcategoryService';
 import { fetchCategories } from '../services/categoryService';
-import { TextField, Button, Container, Typography, Select, MenuItem, FormControl, InputLabel, Table, TableHead, TableRow, TableCell, TableBody, IconButton } from '@mui/material';
+import {
+    TextField,
+    Button,
+    Container,
+    Typography,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableBody,
+    IconButton,
+    Alert,
+    Snackbar
+} from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 
 function SubcategoryManagement() {
@@ -10,6 +28,7 @@ function SubcategoryManagement() {
     const [categoryId, setCategoryId] = useState('');
     const [categories, setCategories] = useState([]);
     const [message, setMessage] = useState('');
+    const [alertOpen, setAlertOpen] = useState(false);  // State to control alert visibility
 
     // Fetch categories and subcategories
     useEffect(() => {
@@ -23,40 +42,54 @@ function SubcategoryManagement() {
                 setCategories(categoriesData);
             } catch (error) {
                 setMessage('Error fetching data.');
+                setAlertOpen(true);
             }
         };
         fetchData();
     }, []);
 
-    // Add a new subcategory
+    // Handle success/error messages display
+    const handleAlertClose = () => {
+        setAlertOpen(false);
+    };
+
+    // Add a new subcategory with input validation and error handling
     const handleAddSubcategory = async (e) => {
         e.preventDefault();
+
+        // Validate inputs to ensure subcategory name and categoryId are provided
+        if (!subcategoryName || !categoryId) {
+            setMessage('Please provide all required fields.');
+            setAlertOpen(true);
+            return;
+        }
+
         try {
             const newSubcategory = { name: subcategoryName, category_id: categoryId };
-            console.log("Creating subcategory with data:", newSubcategory);  // Log request data to check
             const createdSubcategory = await createSubcategory(newSubcategory);
-    
-            // Log the response to check the structure
-            console.log("Created subcategory:", createdSubcategory);
-            
+
             setSubcategories([...subcategories, createdSubcategory]);
             setSubcategoryName('');
             setCategoryId('');
             setMessage('Subcategory added successfully!');
+            setAlertOpen(true);
         } catch (error) {
             setMessage('Error creating subcategory.');
+            setAlertOpen(true);
             console.error(error);
         }
     };
 
-    // Delete subcategory
+    // Delete subcategory with error handling
     const handleDeleteSubcategory = async (subcategoryId) => {
         try {
             await deleteSubcategory(subcategoryId);
             setSubcategories(subcategories.filter(subcategory => subcategory.id !== subcategoryId));
             setMessage('Subcategory deleted successfully!');
+            setAlertOpen(true);
         } catch (error) {
             setMessage('Error deleting subcategory.');
+            setAlertOpen(true);
             console.error(error);
         }
     };
@@ -78,6 +111,7 @@ function SubcategoryManagement() {
                     <Select
                         value={categoryId}
                         onChange={(e) => setCategoryId(e.target.value)}
+                        required
                     >
                         {categories.map((category) => (
                             <MenuItem key={category.id} value={category.id}>
@@ -90,7 +124,18 @@ function SubcategoryManagement() {
                     Add Subcategory
                 </Button>
             </form>
-            {message && <Typography color="error" align="center">{message}</Typography>}
+
+            {/* Snackbar alert for user messages */}
+            <Snackbar
+                open={alertOpen}
+                autoHideDuration={6000}
+                onClose={handleAlertClose}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={handleAlertClose} severity={message.includes('Error') ? 'error' : 'success'}>
+                    {message}
+                </Alert>
+            </Snackbar>
 
             <Typography variant="h6" gutterBottom>Subcategories List</Typography>
             <Table>
@@ -107,7 +152,7 @@ function SubcategoryManagement() {
                         <TableRow key={subcategory.id}>
                             <TableCell>{subcategory.id}</TableCell>
                             <TableCell>{subcategory.name}</TableCell>
-                            <TableCell>{subcategory.category ? subcategory.category.name : 'No Category'}</TableCell>  {/* Fix: Category display */}
+                            <TableCell>{subcategory.category ? subcategory.category.name : 'No Category'}</TableCell>
                             <TableCell>
                                 <IconButton color="primary" onClick={() => alert('Edit Subcategory')}>
                                     <Edit />

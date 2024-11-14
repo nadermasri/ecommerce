@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { fetchOrders, createOrder, updateOrderInfo, deleteOrder, trackOrder, returnItem, fetchReturns,updateReturnStatus   } from '../services/orderService';
 import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Box, TextField, Select, MenuItem, FormControl, InputLabel, Card, CardContent, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function OrderManagement() {
+    const navigate = useNavigate();  // Initialize navigate hook
     const [orders, setOrders] = useState([]);
     const [returns, setReturns] = useState([]);
     
@@ -40,35 +42,69 @@ function OrderManagement() {
     };
     
     useEffect(() => {
+        const token = localStorage.getItem('authToken');  // Retrieve the token from localStorage
+    
+        if (!token) {
+            alert('Session expired. Please log in again.');  // Optional message
+            navigate('/login');  // Redirect to login if no token exists
+            return;  // Exit early if the token is missing
+        }
+    
+        // Fetch data only if the token exists
         const fetchAllData = async () => {
             try {
-                const ordersData = await fetchOrders();
+                const ordersData = await fetchOrders(token);  // Pass token to fetchOrders
                 setOrders(ordersData);
     
-                const returnsData = await fetchReturns();
+                const returnsData = await fetchReturns(token);  // Pass token to fetchReturns
                 setReturns(returnsData);
             } catch (error) {
                 console.error("Error fetching data:", error);
+                alert('Failed to fetch orders and returns. Please try again.');
             }
         };
-        fetchAllData();
-    }, []);
+    
+        fetchAllData();  // Call the fetch function if the token is valid
+    }, [navigate]);  // Dependency array to run the effect only once when the component mounts
+    
     
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setNewOrder({ ...newOrder, [name]: value });
+    
+        if (name === 'user_id') {
+            // Convert user_id to string before sanitization
+            const sanitizedValue = String(value).replace(/[^a-zA-Z0-9]/g, '');  // Sanitize user_id by allowing only alphanumeric characters
+            setNewOrder({ ...newOrder, [name]: sanitizedValue });
+        } else {
+            setNewOrder({ ...newOrder, [name]: value });
+        }
     };
+    
+    
 
     const handleCreateOrder = async (e) => {
         e.preventDefault();
+        const token = localStorage.getItem('authToken');  // Get token from localStorage
         if (!newOrder.user_id || newOrder.items.length === 0) {
             alert('Please provide a user and at least one item.');
             return;
         }
+    
+        const sanitizedItems = newOrder.items.map(item => ({
+            ...item,
+            product_id: item.product_id.replace(/[^a-zA-Z0-9]/g, ''),  // Sanitize product_id
+            quantity: Math.max(1, parseInt(item.quantity, 10) || 1)  // Ensure valid quantity
+        }));
+    
+        const sanitizedOrder = {
+            ...newOrder,
+            items: sanitizedItems
+        };
+    
         try {
-            await createOrder(newOrder);
-            const data = await fetchOrders();
+            await createOrder(sanitizedOrder, token);  // Pass the sanitized order to API
+            const data = await fetchOrders(token);  // Fetch orders with token
             setOrders(data);
             setNewOrder({
                 user_id: '',
@@ -81,6 +117,9 @@ function OrderManagement() {
             alert("Failed to create the order. Please try again.");
         }
     };
+    
+    
+    
 
     const handleAddOrderItem = () => {
         setNewOrder({ ...newOrder, items: [...newOrder.items, { product_id: '', quantity: '' }] });
@@ -89,9 +128,20 @@ function OrderManagement() {
     const handleOrderItemChange = (index, e) => {
         const { name, value } = e.target;
         const newItems = [...newOrder.items];
-        newItems[index][name] = value;
+    
+        if (name === 'product_id') {
+            // Ensure product_id is alphanumeric and safe
+            newItems[index][name] = value.replace(/[^a-zA-Z0-9]/g, '');  // Sanitize product_id
+        } else if (name === 'quantity') {
+            // Ensure quantity is a valid positive integer
+            newItems[index][name] = Math.max(1, parseInt(value, 10) || 1);  // Ensure quantity is at least 1
+        } else {
+            newItems[index][name] = value;
+        }
+    
         setNewOrder({ ...newOrder, items: newItems });
     };
+    
 
     const handleOrderUpdate = (order) => {
         setEditingOrder(order);
@@ -169,8 +219,16 @@ function OrderManagement() {
 
     const handleReturnInputChange = (e) => {
         const { name, value } = e.target;
-        setReturnData({ ...returnData, [name]: value });
+        
+        if (name === 'reason') {
+            // Remove any HTML tags or scripts in the reason
+            const sanitizedReason = value.replace(/<[^>]*>/g, '');  // Strip HTML tags
+            setReturnData({ ...returnData, [name]: sanitizedReason });
+        } else {
+            setReturnData({ ...returnData, [name]: value });
+        }
     };
+    
 
     const handleReturnSubmit = async () => {
         try {
@@ -215,12 +273,12 @@ function OrderManagement() {
         setReturnDialogOpen(true);
     };
     const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-const [selectedReturnItem, setSelectedReturnItem] = useState(null);
-const handleOpenStatusDialog = (returnItem) => {
-    setSelectedReturnItem(returnItem);
-    setNewStatus(returnItem.status); // Set the current status as default
-    setStatusDialogOpen(true);
-};
+    const [selectedReturnItem, setSelectedReturnItem] = useState(null);
+    const handleOpenStatusDialog = (returnItem) => {
+        setSelectedReturnItem(returnItem);
+        setNewStatus(returnItem.status); // Set the current status as default
+        setStatusDialogOpen(true);
+    };
 
 
 

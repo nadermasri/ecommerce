@@ -8,16 +8,16 @@ import { useNavigate } from 'react-router-dom';
 import { fetchUsers } from '../services/userService';
 import { getProducts } from '../services/productService';
 import { getLowStockAlerts } from '../services/inventoryService';
-import { fetchActivityLogs } from '../services/userService'; // Assuming activity logs API
-import { fetchOrders } from '../services/orderService'; // <-- Import fetchOrders
+import { fetchActivityLogs } from '../services/userService';
+import { fetchOrders } from '../services/orderService';
 
 const DashboardHome = ({ setTabIndex }) => {
   const navigate = useNavigate();
 
-  // Handle navigation
+  // Handle navigation with tab index for consistency
   const handleNavigate = (path, tabIndex) => {
-    setTabIndex(tabIndex); // Update tabIndex to switch to the respective tab
-    navigate(path); // Navigate to the respective page
+    setTabIndex(tabIndex);
+    navigate(path);
   };
 
   // States for data
@@ -27,28 +27,34 @@ const DashboardHome = ({ setTabIndex }) => {
   const [lowInventory, setLowInventory] = useState(0);
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch data
+  // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null); // Clear any previous errors
 
-        // Fetch users, products, low stock alerts, and activity logs
-        const userData = await fetchUsers();
-        const orderData = await fetchOrders(); // Fetch real orders data
-        const productData = await getProducts();
-        const lowStockData = await getLowStockAlerts();
-        const activityData = await fetchActivityLogs();
+        // Fetch users, products, orders, low stock alerts, and activity logs
+        const [userData, orderData, productData, lowStockData, activityData] = await Promise.all([
+          fetchUsers(),
+          fetchOrders(),
+          getProducts(),
+          getLowStockAlerts(),
+          fetchActivityLogs(),
+        ]);
 
-        setUsers(userData.length); // Assuming user data has a length for total count
-        setOrders(orderData.length); // Assuming order data has a length for total count
-        setProducts(productData.length); // Assuming product data has a length for total count
-        setLowInventory(lowStockData.length); // Assuming low stock data has a length for total count
+        // Set counts and logs for display
+        setUsers(userData.length);
+        setOrders(orderData.length);
+        setProducts(productData.length);
+        setLowInventory(lowStockData.length);
         setActivityLogs(activityData);
 
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching dashboard data:', error);
+        setError('An error occurred while loading data.');
       } finally {
         setLoading(false);
       }
@@ -57,12 +63,10 @@ const DashboardHome = ({ setTabIndex }) => {
     fetchData();
   }, []);
 
-  // Updated function to change tab without navigation
   const handleNavigateToTab = (tabIndex) => {
     setTabIndex(tabIndex);
   };
 
-  // Dummy data for charts (You can replace this with real data if available)
   const chartData = [
     { name: 'Jan', uv: 4000, pv: 2400 },
     { name: 'Feb', uv: 3000, pv: 1398 },
@@ -72,11 +76,11 @@ const DashboardHome = ({ setTabIndex }) => {
 
   return (
     <Box sx={{ padding: '20px', backgroundColor: '#f4f6f8', minHeight: '100vh' }}>
-      {/* Quick Stats Section */}
       <Grid container spacing={3} sx={{ marginBottom: '20px' }}>
-        {/* Total Users */}
+        
+        {/* Total Users Card */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#1976d2', color: '#fff', borderRadius: '12px', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' } }}>
+          <Card sx={cardStyles('#1976d2')}>
             <CardContent>
               <Typography variant="h5">Total Users</Typography>
               <Typography variant="h3">{loading ? <CircularProgress size={24} /> : users}</Typography>
@@ -87,9 +91,9 @@ const DashboardHome = ({ setTabIndex }) => {
           </Card>
         </Grid>
 
-        {/* Total Orders */}
+        {/* Total Orders Card */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#ff9800', color: '#fff', borderRadius: '12px', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' } }}>
+          <Card sx={cardStyles('#ff9800')}>
             <CardContent>
               <Typography variant="h5">Total Orders</Typography>
               <Typography variant="h3">{loading ? <CircularProgress size={24} /> : orders}</Typography>
@@ -100,9 +104,9 @@ const DashboardHome = ({ setTabIndex }) => {
           </Card>
         </Grid>
 
-        {/* Total Products */}
+        {/* Total Products Card */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#4caf50', color: '#fff', borderRadius: '12px', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' } }}>
+          <Card sx={cardStyles('#4caf50')}>
             <CardContent>
               <Typography variant="h5">Total Products</Typography>
               <Typography variant="h3">{loading ? <CircularProgress size={24} /> : products}</Typography>
@@ -113,9 +117,9 @@ const DashboardHome = ({ setTabIndex }) => {
           </Card>
         </Grid>
 
-        {/* Low Inventory */}
+        {/* Low Inventory Card */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', backgroundColor: '#9c27b0', color: '#fff', borderRadius: '12px', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' } }}>
+          <Card sx={cardStyles('#9c27b0')}>
             <CardContent>
               <Typography variant="h5">Low Inventory</Typography>
               <Typography variant="h3">{loading ? <CircularProgress size={24} /> : lowInventory}</Typography>
@@ -127,11 +131,11 @@ const DashboardHome = ({ setTabIndex }) => {
         </Grid>
       </Grid>
 
-      {/* Quick Actions Section */}
       <Grid container spacing={3} sx={{ marginBottom: '20px' }}>
+        
         {/* Quick Actions Card */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ backgroundColor: '#fff', boxShadow: 3, borderRadius: '12px', padding: '20px' }}>
+          <Card sx={actionCardStyles}>
             <CardContent>
               <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Quick Actions</Typography>
               <Button
@@ -159,7 +163,7 @@ const DashboardHome = ({ setTabIndex }) => {
 
         {/* Recent Activities Card */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ backgroundColor: '#fff', boxShadow: 3, borderRadius: '12px', padding: '20px' }}>
+          <Card sx={actionCardStyles}>
             <CardContent>
               <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Recent Activities</Typography>
               <Divider sx={{ marginBottom: '10px' }} />
@@ -180,7 +184,7 @@ const DashboardHome = ({ setTabIndex }) => {
 
         {/* Sales Overview Chart */}
         <Grid item xs={12} sm={6} md={6}>
-          <Card sx={{ backgroundColor: '#fff', boxShadow: 3, borderRadius: '12px', padding: '20px' }}>
+          <Card sx={actionCardStyles}>
             <CardContent>
               <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Sales Overview (Last 3 Months)</Typography>
               <Box sx={{ paddingTop: '20px', height: '300px' }}>
@@ -198,8 +202,35 @@ const DashboardHome = ({ setTabIndex }) => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Error Message */}
+      {error && (
+        <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <Typography variant="body2" color="error">{error}</Typography>
+        </Box>
+      )}
     </Box>
   );
+};
+
+// Separate card styles to enhance readability and reusability
+const cardStyles = (bgColor) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '16px',
+  backgroundColor: bgColor,
+  color: '#fff',
+  borderRadius: '12px',
+  transition: 'transform 0.3s',
+  '&:hover': { transform: 'scale(1.05)' },
+});
+
+const actionCardStyles = {
+  backgroundColor: '#fff',
+  boxShadow: 3,
+  borderRadius: '12px',
+  padding: '20px',
 };
 
 export default DashboardHome;

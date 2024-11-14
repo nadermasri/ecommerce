@@ -1,4 +1,4 @@
-// src/components/InventoryManagement.js
+//components/InventoryManagement.js
 
 import React, { useEffect, useState } from 'react';
 import { updateStock, getLowStockAlerts, getInventoryReport, fetchInventory, addInventory } from '../services/inventoryService';
@@ -18,14 +18,16 @@ function InventoryManagement() {
     const [lowStockAlerts, setLowStockAlerts] = useState([]);
     const [inventoryReport, setInventoryReport] = useState([]);
     const [inventory, setInventory] = useState([]);
-    const [editingInventory, setEditingInventory] = useState(null); // State to manage editing inventory
+    const [editingInventory, setEditingInventory] = useState(null);
 
+    // Fetch data on component mount
     useEffect(() => {
         fetchAllInventory();
         fetchLowStockAlerts();
         fetchInventoryReport();
     }, []);
 
+    // Fetches all inventory
     const fetchAllInventory = async () => {
         try {
             const data = await fetchInventory();
@@ -35,6 +37,7 @@ function InventoryManagement() {
         }
     };
 
+    // Fetches low stock alerts
     const fetchLowStockAlerts = async () => {
         try {
             const data = await getLowStockAlerts();
@@ -44,6 +47,7 @@ function InventoryManagement() {
         }
     };
 
+    // Fetches inventory report
     const fetchInventoryReport = async () => {
         try {
             const data = await getInventoryReport();
@@ -53,13 +57,17 @@ function InventoryManagement() {
         }
     };
 
+    // Handles input changes with validation for number fields
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        setFormData({ ...formData, [name]: name === 'stock_level' ? validateNumber(value) : value });
     };
 
+    // Updates stock level with validation
     const handleUpdateStock = async (e) => {
         e.preventDefault();
+        if (!validateStockForm(formData)) return;
+
         try {
             const response = await updateStock(
                 parseInt(formData.product_id, 10),
@@ -68,36 +76,37 @@ function InventoryManagement() {
             );
             alert(response.message);
             setFormData({ product_id: '', location: '', stock_level: '' });
-            setEditingInventory(null); // Reset editing state
-            fetchAllInventory(); // Refresh inventory list after update
+            setEditingInventory(null);
+            fetchAllInventory();
         } catch (error) {
             alert("Failed to update stock.");
         }
     };
 
+    // Handles new inventory input changes with validation
     const handleNewInventoryChange = (e) => {
         const { name, value } = e.target;
-        setNewInventory({ ...newInventory, [name]: value });
+        setNewInventory({ ...newInventory, [name]: name === 'stock_level' ? validateNumber(value) : value });
     };
 
+    // Adds new inventory record with validation
     const handleAddInventory = async (e) => {
         e.preventDefault();
+        if (!validateStockForm(newInventory)) return;
+
         try {
             const response = await addInventory(newInventory);
             alert(response.message);
-            
-            // Refresh the inventory list after adding new record
-            await fetchAllInventory(); 
-
-            // Clear the form
+            await fetchAllInventory();
             setNewInventory({ product_id: '', location: '', stock_level: '' });
         } catch (error) {
             alert("Failed to add inventory. Please try again.");
         }
     };
 
+    // Enters editing mode for selected inventory item
     const handleEditInventory = (record) => {
-        setEditingInventory(record); 
+        setEditingInventory(record);
         setFormData({
             product_id: record.product_id,
             location: record.location,
@@ -105,9 +114,26 @@ function InventoryManagement() {
         });
     };
 
+    // Cancels editing mode
     const handleCancelEdit = () => {
-        setEditingInventory(null); 
+        setEditingInventory(null);
         setFormData({ product_id: '', location: '', stock_level: '' });
+    };
+
+    // Helper function to validate that stock levels and product IDs are numbers
+    const validateNumber = (value) => (!isNaN(value) && value >= 0) ? value : '';
+
+    // Helper function to validate form inputs
+    const validateStockForm = (form) => {
+        if (!form.product_id || !form.location || form.stock_level === '') {
+            alert("All fields are required.");
+            return false;
+        }
+        if (isNaN(form.stock_level) || form.stock_level < 0) {
+            alert("Stock level must be a non-negative number.");
+            return false;
+        }
+        return true;
     };
 
     return (
@@ -140,7 +166,7 @@ function InventoryManagement() {
                                 <Button
                                     variant="contained"
                                     color="primary"
-                                    onClick={() => handleEditInventory(record)} // Edit mode
+                                    onClick={() => handleEditInventory(record)}
                                 >
                                     Update Stock
                                 </Button>
@@ -196,9 +222,7 @@ function InventoryManagement() {
 
             {/* Add New Inventory Form */}
             <Box marginTop={4}>
-                <Typography variant="h6" gutterBottom>
-                    Add New Inventory
-                </Typography>
+                <Typography variant="h6" gutterBottom>Add New Inventory</Typography>
                 <form onSubmit={handleAddInventory}>
                     <TextField
                         label="Product ID"

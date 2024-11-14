@@ -1,10 +1,10 @@
+//components/UserManagement.js
 import React, { useState, useEffect } from 'react';
 import {
     fetchUsers,
     fetchAdminUsers,
     deleteUser,
     updateUserProfile,
-    fetchUserProfile,
     updateAdminUser,
     deleteAdminUser,
     createAdmin
@@ -21,7 +21,8 @@ import {
     TableRow,
     Box,
     Select,
-    MenuItem
+    MenuItem,
+    Alert
 } from '@mui/material';
 
 function UserManagement() {
@@ -51,6 +52,7 @@ function UserManagement() {
         role: 'InventoryManager'
     });
     const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
 
     useEffect(() => {
         const fetchAllUsers = async () => {
@@ -59,6 +61,7 @@ function UserManagement() {
                 setUsers(users);
             } catch (error) {
                 console.error("Error fetching users:", error);
+                setError("Failed to fetch users.");
             }
         };
         fetchAllUsers();
@@ -113,62 +116,124 @@ function UserManagement() {
         const { name, value } = e.target;
         setNewAdminData({ ...newAdminData, [name]: value });
     };
+    // Username validation to allow only alphanumeric characters and underscores, no spaces or special characters
+    const validateUsername = (username) => /^[a-zA-Z0-9_]+$/.test(username);
+
+    const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
+    const validatePassword = (password) => password.length >= 8;
 
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
+        setError(null);
+        setSuccess(null);
+        // Validate username format
+        if (!validateUsername(newAdminData.username)) {
+            setError("Username can only contain letters, numbers, and underscores.");
+            return;
+        }
+        
+
+        if (!validateEmail(newAdminData.email)) {
+            setError("Invalid email format.");
+            return;
+        }
+        if (!validatePassword(newAdminData.password)) {
+            setError("Password must be at least 8 characters.");
+            return;
+        }
+
         try {
             await createAdmin(newAdminData.username, newAdminData.email, newAdminData.password, newAdminData.role);
-            alert("Admin created successfully!");
-            setNewAdminData({
-                username: '',
-                email: '',
-                password: '',
-                role: 'InventoryManager'
-            });
-            handleFetchAdminUsers();  // Refresh the list of admins
+            setSuccess("Admin created successfully!");
+            setNewAdminData({ username: '', email: '', password: '', role: 'InventoryManager' });
+            handleFetchAdminUsers();
         } catch (error) {
             console.error("Failed to create admin:", error);
-            if (error.response) {
-                alert(`Backend error: ${error.response.data.error || error.response.data}`);
-            }
+            setError(error.response?.data || "Failed to create admin.");
         }
     };
 
     const handleUpdateUser = async (e) => {
         e.preventDefault();
+        setError(null);
+        setSuccess(null);
+
         if (editingUser) {
-            await updateUserProfile(editingUser.id, formData);
-            const updatedUsers = await fetchUsers();
-            setUsers(updatedUsers);
-            setEditingUser(null);
+            // Validate username format
+            if (!validateUsername(formData.username)) {
+                setError("Username can only contain letters, numbers, and underscores.");
+                return;
+            }
+            try {
+                await updateUserProfile(editingUser.id, formData);
+                setSuccess("User updated successfully!");
+                const updatedUsers = await fetchUsers();
+                setUsers(updatedUsers);
+                setEditingUser(null);
+            } catch (error) {
+                console.error("Failed to update user:", error);
+                setError("Failed to update user.");
+            }
         }
     };
 
     const handleUpdateAdmin = async (e) => {
         e.preventDefault();
+        setError(null);
+        setSuccess(null);
+
         if (editingAdmin) {
-            await updateAdminUser(editingAdmin.id, adminFormData);
-            const updatedAdmins = await fetchAdminUsers();
-            setAdminUsers(updatedAdmins);
-            setEditingAdmin(null);
+            if (!validateUsername(adminFormData.username)) {
+                setError("Username can only contain letters, numbers, and underscores.");
+                return;
+            }
+            try {
+                await updateAdminUser(editingAdmin.id, adminFormData);
+                setSuccess("Admin updated successfully!");
+                const updatedAdmins = await fetchAdminUsers();
+                setAdminUsers(updatedAdmins);
+                setEditingAdmin(null);
+            } catch (error) {
+                console.error("Failed to update admin:", error);
+                setError("Failed to update admin.");
+            }
         }
     };
 
     const handleDeleteUser = async (id) => {
-        await deleteUser(id);
-        const updatedUsers = await fetchUsers();
-        setUsers(updatedUsers);
+        setError(null);
+        setSuccess(null);
+        try {
+            await deleteUser(id);
+            setSuccess("User deleted successfully.");
+            const updatedUsers = await fetchUsers();
+            setUsers(updatedUsers);
+        } catch (error) {
+            console.error("Failed to delete user:", error);
+            setError("Failed to delete user.");
+        }
     };
 
     const handleDeleteAdmin = async (id) => {
-        await deleteAdminUser(id);
-        const updatedAdmins = await fetchAdminUsers();
-        setAdminUsers(updatedAdmins);
+        setError(null);
+        setSuccess(null);
+        try {
+            await deleteAdminUser(id);
+            setSuccess("Admin deleted successfully.");
+            const updatedAdmins = await fetchAdminUsers();
+            setAdminUsers(updatedAdmins);
+        } catch (error) {
+            console.error("Failed to delete admin:", error);
+            setError("Failed to delete admin.");
+        }
     };
 
     return (
         <Container maxWidth="md">
             <Typography variant="h4" align="center" gutterBottom>Manage Users</Typography>
+
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
             {/* Regular Users Table */}
             <Table>
@@ -213,6 +278,7 @@ function UserManagement() {
                             onChange={handleInputChange}
                             fullWidth
                             margin="normal"
+                            required
                         />
                         <TextField
                             label="Email"
@@ -221,6 +287,7 @@ function UserManagement() {
                             onChange={handleInputChange}
                             fullWidth
                             margin="normal"
+                            required
                         />
                         <TextField
                             label="Address"
@@ -296,6 +363,7 @@ function UserManagement() {
                             onChange={handleAdminInputChange}
                             fullWidth
                             margin="normal"
+                            required
                         />
                         <TextField
                             label="Email"
@@ -304,6 +372,7 @@ function UserManagement() {
                             onChange={handleAdminInputChange}
                             fullWidth
                             margin="normal"
+                            required
                         />
                         <Select
                             name="role"
@@ -311,6 +380,7 @@ function UserManagement() {
                             onChange={handleAdminInputChange}
                             fullWidth
                             margin="normal"
+                            required
                         >
                             <MenuItem value="InventoryManager">Inventory Manager</MenuItem>
                             <MenuItem value="OrderManager">Order Manager</MenuItem>
@@ -325,6 +395,7 @@ function UserManagement() {
                             type="password"
                             fullWidth
                             margin="normal"
+                            required
                         />
                         <Box display="flex" gap={2} marginTop={2}>
                             <Button variant="contained" color="primary" type="submit" fullWidth>
@@ -350,6 +421,8 @@ function UserManagement() {
                         fullWidth
                         margin="normal"
                         required
+                        error={!validateUsername(newAdminData.username)}
+                        helperText={!validateUsername(newAdminData.username) ? "Username can only contain letters, numbers, and underscores" : ""}
                     />
                     <TextField
                         label="Email"
@@ -359,6 +432,8 @@ function UserManagement() {
                         fullWidth
                         margin="normal"
                         required
+                        error={!validateEmail(newAdminData.email)}
+                        helperText={!validateEmail(newAdminData.email) ? "Invalid email format" : ""}
                     />
                     <TextField
                         label="Password"
@@ -369,6 +444,8 @@ function UserManagement() {
                         fullWidth
                         margin="normal"
                         required
+                        error={!validatePassword(newAdminData.password)}
+                        helperText={!validatePassword(newAdminData.password) ? "Password must be at least 8 characters" : ""}
                     />
                     <Select
                         name="role"

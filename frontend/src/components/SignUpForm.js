@@ -1,3 +1,4 @@
+//components/SignUpForm.js
 import React, { useState } from 'react';
 import axios from 'axios';
 
@@ -9,13 +10,19 @@ function SignUpForm() {
         membership_tier: 'Normal',
         address: '',
         phone_number: '',
-        wishlist: [],       // Assuming this can be an empty array by default
-        preferences: {}      // Assuming this can be an empty object by default
+        wishlist: [],        // Default empty array
+        preferences: {}      // Default empty object
     });
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const SERVER_URL = "http://127.0.0.1:5000";
-    // Handle input changes
+
+    // Input validation functions
+    const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
+    const validatePassword = (password) => password.length >= 8;
+    const validatePhoneNumber = (phone) => /^[\d\s-]{7,15}$/.test(phone);  // Allows digits, spaces, hyphens
+
+    // Handle input changes with validation
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({
@@ -24,18 +31,42 @@ function SignUpForm() {
         });
     };
 
-    // Handle form submission
+    // Handle form submission with input validation and error handling
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');  // Clear any previous error
-        setSuccessMessage('');  // Clear any previous success message
+        setError('');
+        setSuccessMessage('');
+
+        // Client-side validation
+        if (!validateEmail(formData.email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+        if (!validatePassword(formData.password)) {
+            setError('Password must be at least 8 characters long.');
+            return;
+        }
+        if (formData.phone_number && !validatePhoneNumber(formData.phone_number)) {
+            setError('Please enter a valid phone number.');
+            return;
+        }
 
         try {
             const response = await axios.post(`${SERVER_URL}/user/register`, formData);
             setSuccessMessage('Registration successful!');
+            setFormData({
+                username: '',
+                email: '',
+                password: '',
+                membership_tier: 'Normal',
+                address: '',
+                phone_number: '',
+                wishlist: [],
+                preferences: {}
+            });
         } catch (error) {
             if (error.response && error.response.data.error) {
-                setError(error.response.data.error);  // Display backend error message
+                setError(error.response.data.error);
             } else {
                 setError('An error occurred while signing up. Please try again.');
             }

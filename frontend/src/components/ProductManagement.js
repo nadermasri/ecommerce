@@ -1,10 +1,9 @@
+//components/ProductManagement.js
 import React, { useEffect, useState } from 'react';
 import {
     getProducts,
     addProduct,
     deleteProduct,
-    updateProduct,
-    setPromotion,
     bulkUploadProducts
 } from '../services/productService';
 import {
@@ -15,13 +14,11 @@ import {
     TableRow,
     Button,
     TextField,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
     Box,
     Container,
-    Typography
+    Typography,
+    Alert,
+    Snackbar
 } from '@mui/material';
 
 function ProductManagement() {
@@ -37,33 +34,76 @@ function ProductManagement() {
         image: ''
     });
     const [file, setFile] = useState(null);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [alertOpen, setAlertOpen] = useState(false);  // Control alert visibility
 
     useEffect(() => {
         fetchProducts();
     }, []);
 
+    // Fetch all products
     const fetchProducts = async () => {
-        const data = await getProducts();
-        setProducts(data);
+        try {
+            const data = await getProducts();
+            setProducts(data);
+        } catch (error) {
+            setError('Failed to fetch products.');
+            setAlertOpen(true);
+        }
     };
 
+    // Close alert
+    const handleAlertClose = () => {
+        setAlertOpen(false);
+    };
+
+    // Input change handler with validation
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewProduct({ ...newProduct, [name]: value });
     };
 
+    // Validate product data
+    const validateProductData = () => {
+        if (!newProduct.name || !newProduct.description || !newProduct.price || !newProduct.stock) {
+            setError("Please fill in all required fields.");
+            setAlertOpen(true);
+            return false;
+        }
+        if (isNaN(newProduct.price) || parseFloat(newProduct.price) <= 0) {
+            setError("Please enter a valid price.");
+            setAlertOpen(true);
+            return false;
+        }
+        if (isNaN(newProduct.stock) || parseInt(newProduct.stock) < 0) {
+            setError("Please enter a valid stock quantity.");
+            setAlertOpen(true);
+            return false;
+        }
+        return true;
+    };
+
+    // Add a new product with validation and error handling
     const handleAddProduct = async (e) => {
         e.preventDefault();
+        setError('');
+        setSuccessMessage('');
+
+        if (!validateProductData()) return;
+
         try {
             const formattedProduct = {
                 ...newProduct,
                 price: parseFloat(newProduct.price),
                 stock: parseInt(newProduct.stock, 10),
                 stock_threshold: parseInt(newProduct.stock_threshold, 10),
-                category_id: parseInt(newProduct.category_id, 10),
+                category_id: newProduct.category_id ? parseInt(newProduct.category_id, 10) : null,
                 subcategory_id: newProduct.subcategory_id ? parseInt(newProduct.subcategory_id, 10) : null,
             };
             await addProduct(formattedProduct);
+            setSuccessMessage("Product added successfully!");
+            setAlertOpen(true);
             fetchProducts();
             setNewProduct({
                 name: '',
@@ -76,37 +116,51 @@ function ProductManagement() {
                 image: ''
             });
         } catch (error) {
-            alert("Failed to add product.");
+            setError("Failed to add product.");
+            setAlertOpen(true);
         }
     };
 
+    // Delete a product with error handling
     const handleDeleteProduct = async (id) => {
         try {
             await deleteProduct(id);
             setProducts(products.filter((product) => product.id !== id));
+            setSuccessMessage("Product deleted successfully.");
+            setAlertOpen(true);
         } catch (error) {
-            alert("Failed to delete product.");
+            setError("Failed to delete product.");
+            setAlertOpen(true);
         }
     };
 
+    // Bulk upload products with file validation and error handling
     const handleBulkUpload = async (e) => {
         e.preventDefault();
         if (!file) {
-            alert("Please select a CSV file first.");
+            setError("Please select a CSV file first.");
+            setAlertOpen(true);
             return;
         }
         try {
             const response = await bulkUploadProducts(file);
-            alert(response.message);
+            setSuccessMessage(response.message || "Bulk upload completed successfully.");
+            setAlertOpen(true);
             fetchProducts();
         } catch (error) {
-            alert("Bulk upload failed.");
+            setError("Bulk upload failed.");
+            setAlertOpen(true);
         }
     };
 
     return (
         <Container>
             <Typography variant="h4" align="center" gutterBottom>Manage Products</Typography>
+
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {successMessage && <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>}
+
+            {/* Form for adding a new product */}
             <form onSubmit={handleAddProduct}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <TextField label="Name" name="name" value={newProduct.name} onChange={handleInputChange} fullWidth required />
@@ -121,13 +175,27 @@ function ProductManagement() {
                 </Box>
             </form>
 
+            {/* Form for bulk uploading products */}
             <form onSubmit={handleBulkUpload}>
                 <Typography variant="h5" sx={{ marginTop: 4 }}>Bulk Upload Products</Typography>
                 <input type="file" accept=".csv" onChange={(e) => setFile(e.target.files[0])} />
                 <Button type="submit" variant="contained" color="primary">Upload CSV</Button>
             </form>
 
-            <Table>
+            {/* Snackbar alert for feedback */}
+            <Snackbar
+                open={alertOpen}
+                autoHideDuration={6000}
+                onClose={handleAlertClose}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={handleAlertClose} severity={error ? "error" : "success"}>
+                    {error || successMessage}
+                </Alert>
+            </Snackbar>
+
+            {/* Product list table */}
+            <Table sx={{ marginTop: 4 }}>
                 <TableHead>
                     <TableRow>
                         <TableCell>ID</TableCell>
