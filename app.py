@@ -22,7 +22,7 @@ migrate = Migrate()  # Initialize the Migrate instance
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}) #i only allow request coming from frontend
     app.config.from_object(Config)
 
     # Initialize extensions with the app

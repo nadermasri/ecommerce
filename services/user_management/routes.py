@@ -9,6 +9,8 @@ from app import db
 # , limiter
 from .models import User, AdminUser, ActivityLog
 from .utils import validate_email, validate_password, is_email_exist, is_username_exist, validate_username
+import secrets
+from flask import make_response
 
 
 users_bp = Blueprint('users', __name__)
@@ -28,6 +30,7 @@ def create_jwt_token(user):
 # Decode and verify JWT
 def verify_jwt(token):
     try:
+        print(token)
         payload = pyjwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
         return payload
     except pyjwt.ExpiredSignatureError:
@@ -38,13 +41,23 @@ def verify_jwt(token):
 #To protect routes with JWT authentication
 def jwt_required(f):
     def decorated_function(*args, **kwargs):
-        token = request.headers.get("Authorization")
+        token = request.cookies.get("jwt_token")
         if not token:
-            abort(401, "Token is missing")
-        token = token.split(" ")[1]  # Extract token part if format is "Bearer <token>"
+            abort(401, "JWT token is missing")
+
+        # Verify JWT
         payload = verify_jwt(token)
         request.user_id = payload["user_id"]
-        request.user_role = payload.get("role")  # Only AdminUser will have a role
+        request.user_role = payload.get("role")
+        
+        # Check CSRF token for state-changing requests
+        if request.method in ["POST", "PUT", "DELETE"]:
+            csrf_token = request.cookies.get("csrf_token")
+            request_csrf_token = request.headers.get("X-CSRF-Token")
+            if not csrf_token or not request_csrf_token or csrf_token != request_csrf_token:
+                abort(403, "Invalid CSRF token")
+
+
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
     return decorated_function
@@ -104,8 +117,15 @@ def login():
 
     user = AdminUser.query.filter_by(username=username).first() or User.query.filter_by(username=username).first()
     if user and user.check_password(password):
-        token = create_jwt_token(user)
-        return jsonify({"message": "Login successful", "token": token}), 200
+        jwt_token = create_jwt_token(user) #jwt token
+        csrf_token = secrets.token_hex(16) #csrf token
+
+        # Set JWT token as HTTP-only cookie and CSRF token as accessible cookie
+        response = make_response(jsonify({"message": "Login successful"}))
+        response.set_cookie('jwt_token', jwt_token, httponly=True, samesite='Lax', path='/')  # HTTP-only JWT cookie
+        response.set_cookie('csrf_token', csrf_token, samesite='Lax')  # Accessible CSRF token
+
+        return response, 200
     else:
         return jsonify({"error": "Invalid credentials"}), 401
 
