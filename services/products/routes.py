@@ -5,6 +5,11 @@ from .decorators import role_required, jwt_required
 from app import db
 import csv
 from ..user_management.models import ActivityLog
+import os
+import magic  # For file signature checking
+import pyclamd  # For virus scanning
+import tempfile
+from werkzeug.utils import secure_filename
 
 products_bp = Blueprint('products', __name__)
 
@@ -106,47 +111,86 @@ def delete_product(product_id):
 
 
 
+# Allowed extensions
+ALLOWED_EXTENSIONS = {'csv'}
+
+def allowed_file(filename):
+    """Check if the file has an allowed extension."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
 @products_bp.route('/bulk_upload', methods=['POST'])
 @jwt_required
 @role_required(['SuperAdmin', 'ProductManager'])
 def bulk_upload_products():
     file = request.files.get('file')
-    if not file or not file.filename.endswith('.csv'):
-        abort(400, "CSV file required")
+    # Check if file is received
+    if file is None:
+        return "No file was uploaded.", 400
+    
+    
+    if not allowed_file(file.filename):
+        return "Only CSV files are allowed", 400
 
-    reader = csv.DictReader(file.stream)
+    # Secure the filename and save it temporarily in the system's temp directory
+    filename = secure_filename(file.filename)
+    temp_file_path = os.path.join(tempfile.gettempdir(), filename)
+    file.save(temp_file_path)
+
+    # Check MIME type to ensure it's CSV
+    mime_type = file.mimetype
+    if mime_type not in ['text/csv', 'application/vnd.ms-excel']:
+        os.remove(temp_file_path)
+        abort(400, "Invalid file type. Only CSV files are allowed")
+
+    # Verify file signature to ensure it’s a CSV file
+    mime = magic.Magic(mime=True)
+    file_signature_type = mime.from_file(temp_file_path)
+    if file_signature_type not in ['text/csv', 'text/plain']:
+        os.remove(temp_file_path)
+        abort(400, "Invalid file signature. Only CSV files are allowed")
+
+    # Limit file size (to 2 MB) to prevent DoS attack
+    if os.path.getsize(temp_file_path) > 2 * 1024 * 1024:
+        os.remove(temp_file_path)
+        abort(413, "File too large")
+
+    # Proceed with processing the CSV content if it passed all checks
     products_added = 0
-
     try:
-        for row in reader:
-            # Validate required fields in each row
-            required_fields = ['name', 'description', 'price', 'stock', 'category_id']
-            for field in required_fields:
-                if field not in row or not row[field]:
-                    abort(400, f"Missing required field in CSV: {field}")
+        with open(temp_file_path, 'r') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                # Validate required fields in each row
+                required_fields = ['name', 'description', 'price', 'stock', 'category_id']
+                for field in required_fields:
+                    if field not in row or not row[field]:
+                        os.remove(temp_file_path)
+                        abort(400, f"Missing required field in CSV: {field}")
 
-            # Parse and validate each field with explicit casting
-            price = float(row['price'])
-            stock = int(row['stock'])
-            stock_threshold = int(row.get('stock_threshold', 10))
-            category_id = int(row['category_id'])
-            subcategory_id = int(row['subcategory_id']) if row.get('subcategory_id') else None
+                # Parse and validate each field with explicit casting
+                price = float(row['price'])
+                stock = int(row['stock'])
+                stock_threshold = int(row.get('stock_threshold', 10))
+                category_id = int(row['category_id'])
+                subcategory_id = int(row['subcategory_id']) if row.get('subcategory_id') else None
 
-            product = Product(
-                name=row['name'],
-                description=row.get('description', ''),
-                price=price,
-                stock=stock,
-                stock_threshold=stock_threshold,
-                image=row.get('image'),
-                category_id=category_id,
-                subcategory_id=subcategory_id
-            )
-            db.session.add(product)
-            products_added += 1
+                product = Product(
+                    name=row['name'],
+                    description=row.get('description', ''),
+                    price=price,
+                    stock=stock,
+                    stock_threshold=stock_threshold,
+                    image=row.get('image'),
+                    category_id=category_id,
+                    subcategory_id=subcategory_id
+                )
+                db.session.add(product)
+                products_added += 1
 
         db.session.commit()
 
+        
         activity_log = ActivityLog(admin_id=request.user_id, action=f"Bulk upload by admin {request.user_id} added {products_added} products.")
         db.session.add(activity_log)
         db.session.commit()
@@ -154,7 +198,10 @@ def bulk_upload_products():
         return jsonify({"message": f"Bulk upload successful. {products_added} products added."}), 201
     except Exception as e:
         db.session.rollback()
-        abort(500, "Bulk upload failed")
+        return jsonify({"error": "Bulk Upload failed."}), 500
+    finally:
+        # Clean up the temporary file
+        os.remove(temp_file_path)
 
 
 @products_bp.route('/<int:product_id>/set_promotion', methods=['PUT'])
