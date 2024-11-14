@@ -42,6 +42,10 @@ function OrderManagement() {
 
     const handleCreateOrder = async (e) => {
         e.preventDefault();
+        if (!newOrder.user_id || newOrder.items.length === 0) {
+            alert('Please provide a user and at least one item.');
+            return;
+        }
         try {
             await createOrder(newOrder);
             const data = await fetchOrders(); // Refresh orders list after creation
@@ -54,8 +58,10 @@ function OrderManagement() {
             });
         } catch (error) {
             console.error("Error creating order:", error);
+            alert("Failed to create the order. Please try again.");
         }
     };
+    
 
     const handleAddOrderItem = () => {
         setNewOrder({ ...newOrder, items: [...newOrder.items, { product_id: '', quantity: '' }] });
@@ -114,8 +120,10 @@ function OrderManagement() {
             setOrders(data);
         } catch (error) {
             console.error("Error deleting order:", error);
+            alert("Failed to delete the order. Please try again.");
         }
     };
+    
 
     const handleTrackOrder = async (orderId) => {
         try {

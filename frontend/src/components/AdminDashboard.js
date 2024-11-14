@@ -10,6 +10,9 @@ import UserManagement from './UserManagement';
 import InventoryManagement from './InventoryManagement';
 import ActivityLog from './ActivityLog';
 import DashboardHome from './DashboardHome'
+import CategoryManagement from './CategoryManagement';
+import SubcategoryManagement from './SubcategoryManagement';
+
 
 function AdminDashboard() {
     const [tabIndex, setTabIndex] = React.useState(0);  // Manage the active tab
@@ -123,6 +126,9 @@ function AdminDashboard() {
                     
                     {/* Logs tab */}
                     <Tab icon={<History />} label={sidebarOpen ? "Logs" : null} />
+
+                    <Tab icon={<ListAlt />} label={sidebarOpen ? "Category Management" : null} />
+                    <Tab icon={<ListAlt />} label={sidebarOpen ? "Subcategory Management" : null} />
                 </Tabs>
 
                 {/* Profile and Logout */}
@@ -228,6 +234,11 @@ function AdminDashboard() {
                     {tabIndex === 3 && <ProductManagement />}
                     {tabIndex === 4 && <InventoryManagement />}
                     {tabIndex === 5 && <ActivityLog />}
+                    {/* Render Category Management form */}
+                    {tabIndex === 6 && <CategoryManagement />}  {/* Add Category Form */}
+                    
+                    {/* Render Subcategory Management form */}
+                    {tabIndex === 7 && <SubcategoryManagement />}  {/* Add Subcategory Form */}
                 </Box>
             </Box>
         </Box>
