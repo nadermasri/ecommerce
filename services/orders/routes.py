@@ -8,6 +8,7 @@ from .decorators import role_required, jwt_required
 from datetime import datetime
 from ..products.models import Product
 
+
 orders_bp = Blueprint('orders', __name__)
 
 
@@ -197,7 +198,7 @@ def track_order(order_id):
 
 @orders_bp.route('/<int:order_id>/return_item', methods=['POST'])
 @jwt_required
-@role_required(['SuperAdmin', 'OrderManager', 'Customer'])
+@role_required(['SuperAdmin', 'OrderManager'])
 def return_item(order_id):
     data = request.get_json()
     
@@ -211,6 +212,14 @@ def return_item(order_id):
     try:
         # Find the order and ensure the item belongs to the order
         order = Order.query.get_or_404(order_id)
+
+        if request.user_role not in ['SuperAdmin', 'OrderManager'] and order.user_id != request.user_id:
+            return jsonify({"error": "Unauthorized to return this item"}), 403
+        
+        # order status should be 'delivered'
+        if order.status.lower() != 'delivered':
+            return jsonify({"error": "Items can only be returned for delivered orders"}), 400
+        
         order_item = OrderItem.query.filter_by(id=order_item_id, order_id=order.id).first()
         
         if not order_item:
@@ -236,7 +245,7 @@ def return_item(order_id):
 
         return jsonify({
             "message": "Return request created successfully",
-            "return": return_item.to_dict()
+            "return": new_return.to_dict()
         }), 201
 
     except Exception as e:
