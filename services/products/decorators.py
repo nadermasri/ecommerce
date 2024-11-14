@@ -21,7 +21,6 @@ def role_required(allowed_roles):
 # Decode and verify JWT
 def verify_jwt(token):
     try:
-        print(token)
         payload = pyjwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
         return payload
     except pyjwt.ExpiredSignatureError:
