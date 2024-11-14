@@ -1,9 +1,15 @@
-//ecommerce/inventory_management/src/components/InventoryManagement.js
+// src/components/InventoryManagement.js
+
 import React, { useEffect, useState } from 'react';
-import { updateStock, getLowStockAlerts, getInventoryReport } from '../services/inventoryService';
+import { updateStock, getLowStockAlerts, getInventoryReport, fetchInventory, addInventory } from '../services/inventoryService';
 import { TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, Container, Box, Typography } from '@mui/material';
 
 function InventoryManagement() {
+    const [newInventory, setNewInventory] = useState({
+        product_id: '',
+        location: '',
+        stock_level: ''
+    });
     const [formData, setFormData] = useState({
         product_id: '',
         location: '',
@@ -11,6 +17,19 @@ function InventoryManagement() {
     });
     const [lowStockAlerts, setLowStockAlerts] = useState([]);
     const [inventoryReport, setInventoryReport] = useState([]);
+    const [inventory, setInventory] = useState([]);
+
+    useEffect(() => {
+        const fetchAllInventory = async () => {
+            try {
+                const data = await fetchInventory();
+                setInventory(data);
+            } catch (error) {
+                console.error("Error fetching inventory:", error);
+            }
+        };
+        fetchAllInventory();
+    }, []);
 
     useEffect(() => {
         fetchLowStockAlerts();
@@ -56,47 +75,97 @@ function InventoryManagement() {
         }
     };
 
+    const handleNewInventoryChange = (e) => {
+        const { name, value } = e.target;
+        setNewInventory({ ...newInventory, [name]: value });
+    };
+
+    const handleAddInventory = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await addInventory(newInventory);
+            alert(response.message);
+            
+            // Refresh the inventory list after adding new record
+            const updatedInventory = await fetchInventory();
+            setInventory(updatedInventory);
+
+            // Clear the form
+            setNewInventory({ product_id: '', location: '', stock_level: '' });
+        } catch (error) {
+            alert("Failed to add inventory. Please try again.");
+        }
+    };
+
     return (
         <Container maxWidth="md">
-            <Typography variant="h4" align="center" gutterBottom>Inventory Management</Typography>
-            <form onSubmit={handleUpdateStock}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <TextField 
-                        label="Product ID" 
-                        name="product_id" 
-                        type="number" 
-                        value={formData.product_id} 
-                        onChange={handleInputChange} 
-                        fullWidth 
-                        required
-                    />
-                    <TextField 
-                        label="Location" 
-                        name="location" 
-                        value={formData.location} 
-                        onChange={handleInputChange} 
-                        fullWidth 
-                        required
-                    />
-                    <TextField 
-                        label="Stock Level" 
-                        name="stock_level" 
-                        type="number" 
-                        value={formData.stock_level} 
-                        onChange={handleInputChange} 
-                        fullWidth 
-                        required
-                    />
-                    <Button 
-                        type="submit" 
-                        variant="contained" 
-                        color="primary" 
+            <Typography variant="h4" align="center" gutterBottom>
+                Inventory Management
+            </Typography>
+
+            {/* Inventory Table */}
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>ID</TableCell>
+                        <TableCell>Product ID</TableCell>
+                        <TableCell>Location</TableCell>
+                        <TableCell>Stock Level</TableCell>
+                        <TableCell>Last Updated</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {inventory.map(record => (
+                        <TableRow key={record.id}>
+                            <TableCell>{record.id}</TableCell>
+                            <TableCell>{record.product_id}</TableCell>
+                            <TableCell>{record.location}</TableCell>
+                            <TableCell>{record.stock_level}</TableCell>
+                            <TableCell>{new Date(record.last_updated).toLocaleString()}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+
+            {/* Add New Inventory Form */}
+            <Box marginTop={4}>
+                <Typography variant="h6" gutterBottom>
+                    Add New Inventory
+                </Typography>
+                <form onSubmit={handleAddInventory}>
+                    <TextField
+                        label="Product ID"
+                        name="product_id"
+                        value={newInventory.product_id}
+                        onChange={handleNewInventoryChange}
                         fullWidth
-                    >
-                        Update Stock
+                        margin="normal"
+                        required
+                    />
+                    <TextField
+                        label="Location"
+                        name="location"
+                        value={newInventory.location}
+                        onChange={handleNewInventoryChange}
+                        fullWidth
+                        margin="normal"
+                        required
+                    />
+                    <TextField
+                        label="Stock Level"
+                        name="stock_level"
+                        value={newInventory.stock_level}
+                        onChange={handleNewInventoryChange}
+                        fullWidth
+                        margin="normal"
+                        required
+                        type="number"
+                    />
+                    <Button variant="contained" color="primary" type="submit" fullWidth sx={{ marginTop: 2 }}>
+                        Add Inventory
                     </Button>
-                </Box>
-            </form>
+                </form>
+            </Box>
 
             <Typography variant="h5" sx={{ marginTop: 4 }}>Low Stock Alerts</Typography>
             {lowStockAlerts.length > 0 ? (

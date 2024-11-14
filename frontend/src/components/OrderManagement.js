@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { fetchOrders, createOrder, updateOrderInfo, deleteOrder, trackOrder, returnOrderItem } from '../services/orderService';
-import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Box, TextField, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Box, TextField, Select, MenuItem, FormControl, InputLabel, Card, CardContent } from '@mui/material';
 
 function OrderManagement() {
     const [orders, setOrders] = useState([]);
@@ -17,12 +17,12 @@ function OrderManagement() {
         status: '',
         delivery_option: '',
     });
-    const [trackingOrder, setTrackingOrder] = useState(null);
+    // const [trackingOrder, setTrackingOrder] = useState(null);
     const [returnData, setReturnData] = useState({ order_item_id: '', reason: '' });
 
     const statusOptions = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled'];
     const deliveryOptions = ['Standard', 'Express', 'In-Store Pickup'];
-
+    const [trackedOrder, setTrackedOrder] = useState(null);
     useEffect(() => {
         const fetchAllOrders = async () => {
             try {
@@ -119,11 +119,15 @@ function OrderManagement() {
 
     const handleTrackOrder = async (orderId) => {
         try {
-            const trackedOrder = await trackOrder(orderId);
-            setTrackingOrder(trackedOrder.order);
+            const trackedData = await trackOrder(orderId);
+            setTrackedOrder(trackedData.order);
         } catch (error) {
             console.error("Error tracking order:", error);
         }
+    };
+
+    const closeTrackedOrder = () => {
+        setTrackedOrder(null);
     };
 
     const handleReturnItem = async (orderId) => {
@@ -168,30 +172,51 @@ function OrderManagement() {
                             <TableCell>{order.status}</TableCell>
                             <TableCell>{order.delivery_option}</TableCell>
                             <TableCell>
-                                <Button variant="contained" color="primary" onClick={() => handleOrderUpdate(order)} sx={{ marginRight: 1 }}>
-                                    Update
-                                </Button>
-                                <Button variant="contained" color="secondary" onClick={() => handleDeleteOrder(order.id)}>
-                                    Delete
-                                </Button>
-                                <Button variant="contained" color="info" onClick={() => handleTrackOrder(order.id)} sx={{ marginTop: 1 }}>
-                                    Track
-                                </Button>
-                                {/* <Button variant="contained" color="secondary" onClick={() => handleReturnItem(order.id)} sx={{ marginLeft: 1 }}>
-                                Return Item
-                                    </Button> */}
-                            </TableCell>
+    <Box display="flex" gap={1}>
+        <Button variant="contained" color="primary" onClick={() => handleOrderUpdate(order)} sx={{ marginRight: 1 }}>
+            Update
+        </Button>
+        <Button variant="contained" color="secondary" onClick={() => handleDeleteOrder(order.id)} sx={{ marginRight: 1 }}>
+            Delete
+        </Button>
+        <Button variant="contained" color="info" onClick={() => handleTrackOrder(order.id)}>
+            Track
+        </Button>
+    </Box>
+</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
 
             {/* Display tracked order information */}
-            {trackingOrder && (
-                <Box marginTop={4}>
-                    <Typography variant="h6" gutterBottom>Tracked Order Details</Typography>
-                    <pre>{JSON.stringify(trackingOrder, null, 2)}</pre>
-                </Box>
+            {trackedOrder && (
+                <Card sx={{ marginTop: 4, padding: 2 }}>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>Tracked Order Details</Typography>
+                        <Typography variant="body1">
+                            <strong>Order ID:</strong> {trackedOrder.id}<br />
+                            <strong>User ID:</strong> {trackedOrder.user_id}<br />
+                            <strong>Status:</strong> {trackedOrder.status}<br />
+                            <strong>Delivery Option:</strong> {trackedOrder.delivery_option}<br />
+                            <strong>Total Price:</strong> ${trackedOrder.total_price}<br />
+                            <strong>Order Date:</strong> {new Date(trackedOrder.order_date).toLocaleString()}<br />
+                        </Typography>
+                        <Typography variant="h6" gutterBottom sx={{ marginTop: 2 }}>Order Items:</Typography>
+                        {trackedOrder.items.map((item, index) => (
+                            <Box key={index} sx={{ marginBottom: 1 }}>
+                                <Typography variant="body2">
+                                    <strong>Product ID:</strong> {item.product_id}<br />
+                                    <strong>Quantity:</strong> {item.quantity}<br />
+                                    <strong>Price:</strong> ${item.price}
+                                </Typography>
+                            </Box>
+                        ))}
+                        <Button variant="contained" color="secondary" onClick={closeTrackedOrder} sx={{ marginTop: 2 }}>
+                            Close
+                        </Button>
+                    </CardContent>
+                </Card>
             )}
 
             {/* Update Order Form */}

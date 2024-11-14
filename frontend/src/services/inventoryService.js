@@ -29,3 +29,34 @@ export const getInventoryReport = async () => {
     });
     return response.data;
 };
+
+// Function to fetch all inventory records
+export const fetchInventory = async () => {
+    const token = localStorage.getItem('authToken'); // Retrieve JWT token from local storage
+    try {
+        const response = await axios.get(`${apiUrl}/inventory/all`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data.inventory;
+    } catch (error) {
+        console.error("Error fetching inventory:", error);
+        throw error;
+    }
+};
+
+export const addInventory = async (inventoryData) => {
+    const token = localStorage.getItem('authToken'); // Retrieve JWT token from local storage
+    try {
+        const response = await axios.post(`${apiUrl}/inventory/add`, inventoryData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error adding inventory:", error);
+        throw error;
+    }
+};
