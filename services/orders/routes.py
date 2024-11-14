@@ -232,6 +232,8 @@ def return_item(order_id):
         # Update the order's total price
         order.total_price -= order_item.price
         
+        # Delete the returned item from the order
+        db.session.delete(order_item)
         
         # Create the return entry
         new_return = Return(
