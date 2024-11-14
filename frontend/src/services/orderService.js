@@ -61,10 +61,39 @@ export const trackOrder = async (orderId) => {
 };
 
 
-export const returnOrderItem = async (orderId, returnData) => {
+export const returnItem = async (orderId, orderItemId, reason) => {
     const token = localStorage.getItem('authToken');
-    const response = await axios.post(`${apiUrl}/orders/${orderId}/return_item`, returnData, {
+    try {
+        const response = await axios.post(
+            `${apiUrl}/orders/${orderId}/return_item`,
+            { order_item_id: orderItemId, reason },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error returning item:", error);
+        throw error;
+    }
+};
+
+export const fetchReturns = async () => {
+    const token = localStorage.getItem('authToken');
+    const response = await axios.get(`${apiUrl}/orders/returns`, {
         headers: { Authorization: `Bearer ${token}` },
     });
+    return response.data.returns;
+};
+
+export const updateReturnStatus = async (returnId, status) => {
+    const token = localStorage.getItem('authToken');
+    const response = await axios.put(
+        `${apiUrl}/orders/returns/${returnId}`,
+        { status },
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
     return response.data;
 };

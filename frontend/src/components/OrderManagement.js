@@ -1,11 +1,16 @@
 // src/components/OrderManagement.js
 
 import React, { useState, useEffect } from 'react';
-import { fetchOrders, createOrder, updateOrderInfo, deleteOrder, trackOrder, returnOrderItem } from '../services/orderService';
-import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Box, TextField, Select, MenuItem, FormControl, InputLabel, Card, CardContent } from '@mui/material';
+import { fetchOrders, createOrder, updateOrderInfo, deleteOrder, trackOrder, returnItem, fetchReturns,updateReturnStatus   } from '../services/orderService';
+import { Container, Typography, Table, TableBody, TableCell, TableHead, TableRow, Button, Box, TextField, Select, MenuItem, FormControl, InputLabel, Card, CardContent, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 
 function OrderManagement() {
     const [orders, setOrders] = useState([]);
+    const [returns, setReturns] = useState([]);
+    
+    const [selectedReturn, setSelectedReturn] = useState(null);
+    const [newStatus, setNewStatus] = useState("");
+
     const [newOrder, setNewOrder] = useState({
         user_id: '',
         status: 'Pending',
@@ -17,23 +22,38 @@ function OrderManagement() {
         status: '',
         delivery_option: '',
     });
-    // const [trackingOrder, setTrackingOrder] = useState(null);
+    const [trackedOrder, setTrackedOrder] = useState(null);
+    const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
     const [returnData, setReturnData] = useState({ order_item_id: '', reason: '' });
 
     const statusOptions = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled'];
     const deliveryOptions = ['Standard', 'Express', 'In-Store Pickup'];
-    const [trackedOrder, setTrackedOrder] = useState(null);
+    const handleOpenReturnDialog = (returnItem) => {
+        setSelectedReturn(returnItem);
+        setNewStatus(returnItem.status); // Set the current status as the default
+        setReturnDialogOpen(true);
+    };
+    const handleCloseReturnDialog = () => {
+        setReturnDialogOpen(false);
+        setSelectedReturn(null);
+    };
+    
     useEffect(() => {
-        const fetchAllOrders = async () => {
+        const fetchAllData = async () => {
             try {
-                const data = await fetchOrders();
-                setOrders(data);
+                const ordersData = await fetchOrders();
+                setOrders(ordersData);
+    
+                const returnsData = await fetchReturns();
+                setReturns(returnsData);
             } catch (error) {
-                console.error("Error fetching orders:", error);
+                console.error("Error fetching data:", error);
             }
         };
-        fetchAllOrders();
+        fetchAllData();
     }, []);
+    
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -48,7 +68,7 @@ function OrderManagement() {
         }
         try {
             await createOrder(newOrder);
-            const data = await fetchOrders(); // Refresh orders list after creation
+            const data = await fetchOrders();
             setOrders(data);
             setNewOrder({
                 user_id: '',
@@ -61,7 +81,6 @@ function OrderManagement() {
             alert("Failed to create the order. Please try again.");
         }
     };
-    
 
     const handleAddOrderItem = () => {
         setNewOrder({ ...newOrder, items: [...newOrder.items, { product_id: '', quantity: '' }] });
@@ -92,7 +111,7 @@ function OrderManagement() {
         if (editingOrder) {
             try {
                 await updateOrderInfo(editingOrder.id, formData);
-                const data = await fetchOrders(); // Refresh orders list after update
+                const data = await fetchOrders();
                 setOrders(data);
                 setEditingOrder(null);
                 setFormData({
@@ -116,19 +135,18 @@ function OrderManagement() {
     const handleDeleteOrder = async (orderId) => {
         try {
             await deleteOrder(orderId);
-            const data = await fetchOrders(); // Refresh orders list after deletion
+            const data = await fetchOrders();
             setOrders(data);
         } catch (error) {
             console.error("Error deleting order:", error);
             alert("Failed to delete the order. Please try again.");
         }
     };
-    
 
     const handleTrackOrder = async (orderId) => {
         try {
             const trackedData = await trackOrder(orderId);
-            setTrackedOrder(trackedData.order);
+            setTrackedOrder(trackedData.order);  // Update the state with the latest order data
         } catch (error) {
             console.error("Error tracking order:", error);
         }
@@ -138,20 +156,73 @@ function OrderManagement() {
         setTrackedOrder(null);
     };
 
-    const handleReturnItem = async (orderId) => {
-        try {
-            await returnOrderItem(orderId, returnData);
-            setReturnData({ order_item_id: '', reason: '' });
-            alert("Return request created successfully");
-        } catch (error) {
-            console.error("Error returning order item:", error);
-        }
+    const handleReturnDialogOpen = (order) => {
+        setSelectedOrder(order);
+        setReturnDialogOpen(true);
     };
 
-    const handleReturnDataChange = (e) => {
+    const handleReturnDialogClose = () => {
+        setReturnDialogOpen(false);
+        setReturnData({ order_item_id: '', reason: '' });
+        setSelectedOrder(null);
+    };
+
+    const handleReturnInputChange = (e) => {
         const { name, value } = e.target;
         setReturnData({ ...returnData, [name]: value });
     };
+
+    const handleReturnSubmit = async () => {
+        try {
+            const response = await returnItem(selectedOrder.id, returnData.order_item_id, returnData.reason);
+            alert(response.message);
+
+            // Refetch the tracked order to update the display with the latest data
+            await handleTrackOrder(selectedOrder.id);
+            
+            handleReturnDialogClose();
+            const data = await fetchOrders();
+            setOrders(data);  // Refresh the orders list
+        } catch (error) {
+            alert("Failed to process return request.");
+        }
+    };
+    const handleUpdateReturnStatus = async () => {
+        if (!selectedReturn || !newStatus) return;
+    
+        try {
+            const updatedReturn = await updateReturnStatus(selectedReturn.id, newStatus);
+            setReturns(returns.map(returnItem => 
+                returnItem.id === updatedReturn.id ? updatedReturn : returnItem
+            ));
+            alert("Return status updated successfully.");
+            handleCloseReturnDialog();
+        } catch (error) {
+            alert("Failed to update return status.");
+            console.error("Error updating return status:", error);
+        }
+    };
+    
+
+    const handleOpenReturnStatusDialog = (returnItem) => {
+        setSelectedReturn(returnItem);
+        setNewStatus(returnItem.status); // Set the current status as the default
+        setReturnDialogOpen(true);
+    };
+    const handleOpenUpdateStatusDialog = (returnItem) => {
+        setSelectedReturn(returnItem);
+        setNewStatus(returnItem.status);
+        setReturnDialogOpen(true);
+    };
+    const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+const [selectedReturnItem, setSelectedReturnItem] = useState(null);
+const handleOpenStatusDialog = (returnItem) => {
+    setSelectedReturnItem(returnItem);
+    setNewStatus(returnItem.status); // Set the current status as default
+    setStatusDialogOpen(true);
+};
+
+
 
     return (
         <Container maxWidth="md">
@@ -159,7 +230,6 @@ function OrderManagement() {
                 Order Management
             </Typography>
 
-            {/* Orders Table */}
             <Table>
                 <TableHead>
                     <TableRow>
@@ -180,24 +250,125 @@ function OrderManagement() {
                             <TableCell>{order.status}</TableCell>
                             <TableCell>{order.delivery_option}</TableCell>
                             <TableCell>
-    <Box display="flex" gap={1}>
-        <Button variant="contained" color="primary" onClick={() => handleOrderUpdate(order)} sx={{ marginRight: 1 }}>
-            Update
-        </Button>
-        <Button variant="contained" color="secondary" onClick={() => handleDeleteOrder(order.id)} sx={{ marginRight: 1 }}>
-            Delete
-        </Button>
-        <Button variant="contained" color="info" onClick={() => handleTrackOrder(order.id)}>
-            Track
-        </Button>
-    </Box>
-</TableCell>
+                                <Box display="flex" gap={1}>
+                                    <Button variant="contained" color="primary" onClick={() => handleOrderUpdate(order)}>
+                                        Update
+                                    </Button>
+                                    <Button variant="contained" color="secondary" onClick={() => handleDeleteOrder(order.id)}>
+                                        Delete
+                                    </Button>
+                                    <Button variant="contained" color="info" onClick={() => handleTrackOrder(order.id)}>
+                                        Track
+                                    </Button>
+                                    <Button variant="contained" color="warning" onClick={() => handleReturnDialogOpen(order)}>
+                                        Return Item
+                                    </Button>
+                                </Box>
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
+            <Dialog open={returnDialogOpen} onClose={handleCloseReturnDialog}>
+    <DialogTitle>Update Return Status</DialogTitle>
+    <DialogContent>
+        <DialogContentText>
+            Select the new status for the return item.
+        </DialogContentText>
+        <FormControl fullWidth margin="normal">
+            <InputLabel>Status</InputLabel>
+            <Select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+            >
+                {['Pending', 'Approved', 'Rejected', 'Completed'].map((status) => (
+                    <MenuItem key={status} value={status}>
+                        {status}
+                    </MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={handleCloseReturnDialog} color="secondary">
+            Cancel
+        </Button>
+        <Button onClick={handleUpdateReturnStatus} color="primary">
+            Update Status
+        </Button>
+    </DialogActions>
+</Dialog>
 
-            {/* Display tracked order information */}
+
+{/* Returns Table */}
+<Box marginTop={4}>
+    <Typography variant="h5" gutterBottom>
+        Returns Management
+    </Typography>
+    <Table>
+        <TableHead>
+            <TableRow>
+                <TableCell>Return ID</TableCell>
+                <TableCell>Order ID</TableCell>
+                <TableCell>Order Item ID</TableCell>
+                <TableCell>Reason</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Actions</TableCell>
+            </TableRow>
+        </TableHead>
+        <TableBody>
+            {returns.map(returnItem => (
+                <TableRow key={returnItem.id}>
+                    <TableCell>{returnItem.id}</TableCell>
+                    <TableCell>{returnItem.order_id}</TableCell>
+                    <TableCell>{returnItem.order_item_id}</TableCell>
+                    <TableCell>{returnItem.reason}</TableCell>
+                    <TableCell>{returnItem.status}</TableCell>
+                    <TableCell>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleOpenReturnStatusDialog(returnItem)}
+                        >
+                            Update Status
+                        </Button>
+                    </TableCell>
+                </TableRow>
+            ))}
+        </TableBody>
+    </Table>
+</Box>
+
+<Dialog open={returnDialogOpen} onClose={() => setReturnDialogOpen(false)}>
+    <DialogTitle>Update Return Status</DialogTitle>
+    <DialogContent>
+        <DialogContentText>
+            Select the new status for the return item.
+        </DialogContentText>
+        <FormControl fullWidth margin="normal">
+            <InputLabel>Status</InputLabel>
+            <Select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+            >
+                {['Pending', 'Approved', 'Rejected', 'Completed'].map((status) => (
+                    <MenuItem key={status} value={status}>
+                        {status}
+                    </MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    </DialogContent>
+    <DialogActions>
+        <Button onClick={() => setReturnDialogOpen(false)} color="secondary">
+            Cancel
+        </Button>
+        <Button onClick={handleOpenReturnStatusDialog} color="primary">
+            Update Status
+        </Button>
+    </DialogActions>
+</Dialog>
+
             {trackedOrder && (
                 <Card sx={{ marginTop: 4, padding: 2 }}>
                     <CardContent>
@@ -227,7 +398,6 @@ function OrderManagement() {
                 </Card>
             )}
 
-            {/* Update Order Form */}
             {editingOrder && (
                 <Box marginTop={4}>
                     <Typography variant="h6" gutterBottom>Update Order</Typography>
@@ -272,7 +442,6 @@ function OrderManagement() {
                 </Box>
             )}
 
-            {/* Create New Order Form */}
             <Box marginTop={4}>
                 <Typography variant="h6" gutterBottom>Create New Order</Typography>
                 <form onSubmit={handleCreateOrder}>
@@ -341,29 +510,46 @@ function OrderManagement() {
                 </form>
             </Box>
 
-            {/* Return Order Item Form */}
-            <Box marginTop={4}>
-                <Typography variant="h6" gutterBottom>Return Order Item</Typography>
-                <TextField
-                    label="Order Item ID"
-                    name="order_item_id"
-                    value={returnData.order_item_id}
-                    onChange={handleReturnDataChange}
-                    fullWidth
-                    margin="normal"
-                />
-                <TextField
-                    label="Reason for Return"
-                    name="reason"
-                    value={returnData.reason}
-                    onChange={handleReturnDataChange}
-                    fullWidth
-                    margin="normal"
-                />
-                <Button variant="contained" color="secondary" onClick={() => handleReturnItem(editingOrder?.id)} fullWidth>
-                    Submit Return Request
-                </Button>
-            </Box>
+            <Dialog open={returnDialogOpen} onClose={handleReturnDialogClose}>
+                <DialogTitle>Return Item</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Select the Order Item and provide a reason for the return.
+                    </DialogContentText>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Order Item</InputLabel>
+                        <Select
+                            name="order_item_id"
+                            value={returnData.order_item_id}
+                            onChange={handleReturnInputChange}
+                        >
+                            {selectedOrder?.items.map(item => (
+                                <MenuItem key={item.id} value={item.id}>
+                                    Product ID: {item.product_id}, Quantity: {item.quantity}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <TextField
+                        margin="dense"
+                        label="Reason"
+                        name="reason"
+                        type="text"
+                        fullWidth
+                        value={returnData.reason}
+                        onChange={handleReturnInputChange}
+                        required
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleReturnDialogClose} color="secondary">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleReturnSubmit} color="primary">
+                        Submit Return
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }

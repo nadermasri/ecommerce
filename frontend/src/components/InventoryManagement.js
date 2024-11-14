@@ -18,23 +18,22 @@ function InventoryManagement() {
     const [lowStockAlerts, setLowStockAlerts] = useState([]);
     const [inventoryReport, setInventoryReport] = useState([]);
     const [inventory, setInventory] = useState([]);
+    const [editingInventory, setEditingInventory] = useState(null); // State to manage editing inventory
 
     useEffect(() => {
-        const fetchAllInventory = async () => {
-            try {
-                const data = await fetchInventory();
-                setInventory(data);
-            } catch (error) {
-                console.error("Error fetching inventory:", error);
-            }
-        };
         fetchAllInventory();
-    }, []);
-
-    useEffect(() => {
         fetchLowStockAlerts();
         fetchInventoryReport();
     }, []);
+
+    const fetchAllInventory = async () => {
+        try {
+            const data = await fetchInventory();
+            setInventory(data);
+        } catch (error) {
+            console.error("Error fetching inventory:", error);
+        }
+    };
 
     const fetchLowStockAlerts = async () => {
         try {
@@ -69,7 +68,8 @@ function InventoryManagement() {
             );
             alert(response.message);
             setFormData({ product_id: '', location: '', stock_level: '' });
-            fetchLowStockAlerts(); // Refresh alerts after stock update
+            setEditingInventory(null); // Reset editing state
+            fetchAllInventory(); // Refresh inventory list after update
         } catch (error) {
             alert("Failed to update stock.");
         }
@@ -87,14 +87,27 @@ function InventoryManagement() {
             alert(response.message);
             
             // Refresh the inventory list after adding new record
-            const updatedInventory = await fetchInventory();
-            setInventory(updatedInventory);
+            await fetchAllInventory(); 
 
             // Clear the form
             setNewInventory({ product_id: '', location: '', stock_level: '' });
         } catch (error) {
             alert("Failed to add inventory. Please try again.");
         }
+    };
+
+    const handleEditInventory = (record) => {
+        setEditingInventory(record); 
+        setFormData({
+            product_id: record.product_id,
+            location: record.location,
+            stock_level: record.stock_level
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingInventory(null); 
+        setFormData({ product_id: '', location: '', stock_level: '' });
     };
 
     return (
@@ -112,6 +125,7 @@ function InventoryManagement() {
                         <TableCell>Location</TableCell>
                         <TableCell>Stock Level</TableCell>
                         <TableCell>Last Updated</TableCell>
+                        <TableCell>Actions</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -122,10 +136,63 @@ function InventoryManagement() {
                             <TableCell>{record.location}</TableCell>
                             <TableCell>{record.stock_level}</TableCell>
                             <TableCell>{new Date(record.last_updated).toLocaleString()}</TableCell>
+                            <TableCell>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => handleEditInventory(record)} // Edit mode
+                                >
+                                    Update Stock
+                                </Button>
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
+
+            {/* Update Stock Form */}
+            {editingInventory && (
+                <Box marginTop={4}>
+                    <Typography variant="h6" gutterBottom>Update Stock for Product ID: {editingInventory.product_id}</Typography>
+                    <form onSubmit={handleUpdateStock}>
+                        <TextField
+                            label="Product ID"
+                            name="product_id"
+                            value={formData.product_id}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                            disabled
+                        />
+                        <TextField
+                            label="Location"
+                            name="location"
+                            value={formData.location}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                            disabled
+                        />
+                        <TextField
+                            label="Stock Level"
+                            name="stock_level"
+                            value={formData.stock_level}
+                            onChange={handleInputChange}
+                            fullWidth
+                            margin="normal"
+                            type="number"
+                        />
+                        <Box display="flex" gap={2} marginTop={2}>
+                            <Button variant="contained" color="primary" type="submit" fullWidth>
+                                Save
+                            </Button>
+                            <Button variant="outlined" color="secondary" onClick={handleCancelEdit} fullWidth>
+                                Cancel
+                            </Button>
+                        </Box>
+                    </form>
+                </Box>
+            )}
 
             {/* Add New Inventory Form */}
             <Box marginTop={4}>
