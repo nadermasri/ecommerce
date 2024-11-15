@@ -1,26 +1,10 @@
-//services/productService.js
-import axios from 'axios';
-
-const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
-
-// Helper function for secure token retrieval
-const getAuthToken = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        throw new Error("Authorization token is missing.");
-    }
-    return token;
-};
+// services/productService.js
+import api from './api';
 
 // Fetch all products with secure headers and error handling
 export const getProducts = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/products/`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-cache',
-            },
-        });
+        const response = await api.get(`/products/`);
         return response.data;
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -32,12 +16,7 @@ export const getProducts = async () => {
 export const addProduct = async (productData) => {
     if (typeof productData !== 'object') throw new Error("Invalid product data.");
     try {
-        const response = await axios.post(`${apiUrl}/products/add`, productData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await api.post(`/products/add`, productData);
         return response.data;
     } catch (error) {
         console.error('Error adding product:', error);
@@ -49,12 +28,7 @@ export const addProduct = async (productData) => {
 export const updateProduct = async (productId, productData) => {
     if (typeof productId !== 'string' || typeof productData !== 'object') throw new Error("Invalid input.");
     try {
-        const response = await axios.put(`${apiUrl}/products/${encodeURIComponent(productId)}`, productData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await api.put(`/products/${encodeURIComponent(productId)}`, productData);
         return response.data;
     } catch (error) {
         console.error('Error updating product:', error);
@@ -66,12 +40,7 @@ export const updateProduct = async (productId, productData) => {
 export const deleteProduct = async (productId) => {
     if (typeof productId !== 'string') throw new Error("Invalid productId.");
     try {
-        const response = await axios.delete(`${apiUrl}/products/${encodeURIComponent(productId)}`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.delete(`/products/${encodeURIComponent(productId)}`);
         return response.data;
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -83,15 +52,9 @@ export const deleteProduct = async (productId) => {
 export const setPromotion = async (productId, discountedPrice) => {
     if (typeof productId !== 'string' || typeof discountedPrice !== 'number') throw new Error("Invalid input.");
     try {
-        const response = await axios.put(
-            `${apiUrl}/products/${encodeURIComponent(productId)}/set_promotion`,
-            { discounted_price: discountedPrice },
-            {
-                headers: {
-                    Authorization: `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json',
-                },
-            }
+        const response = await api.put(
+            `/products/${encodeURIComponent(productId)}/set_promotion`,
+            { discounted_price: discountedPrice }
         );
         return response.data;
     } catch (error) {
@@ -107,13 +70,7 @@ export const bulkUploadProducts = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await axios.post(`${apiUrl}/products/bulk_upload`, formData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'multipart/form-data',
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.post(`/products/bulk_upload`, formData);
         return response.data;
     } catch (error) {
         console.error('Error bulk uploading products:', error);

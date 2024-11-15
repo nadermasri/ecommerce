@@ -1,16 +1,5 @@
-//services/inventoryService.js
-import axios from 'axios';
-
-const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
-
-// Helper function for secure token retrieval
-const getAuthToken = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        throw new Error("Authorization token is missing.");
-    }
-    return token;
-};
+// services/inventoryService.js
+import api from './api';
 
 // Update stock level with input validation and secure headers
 export const updateStock = async (product_id, location, stock_level) => {
@@ -18,15 +7,9 @@ export const updateStock = async (product_id, location, stock_level) => {
         throw new Error("Invalid input data.");
     }
     try {
-        const response = await axios.post(
-            `${apiUrl}/inventory/update_stock`,
-            { product_id, location, stock_level },
-            {
-                headers: {
-                    Authorization: `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json',
-                },
-            }
+        const response = await api.post(
+            `/inventory/update_stock`,
+            { product_id, location, stock_level }
         );
         return response.data;
     } catch (error) {
@@ -38,12 +21,7 @@ export const updateStock = async (product_id, location, stock_level) => {
 // Get low stock alerts with secure headers and error handling
 export const getLowStockAlerts = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/inventory/low_stock_alerts`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get(`/inventory/low_stock_alerts`);
         return response.data;
     } catch (error) {
         console.error("Error fetching low stock alerts:", error);
@@ -54,12 +32,7 @@ export const getLowStockAlerts = async () => {
 // Get inventory report with secure headers and error handling
 export const getInventoryReport = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/inventory/inventory_report`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get(`/inventory/inventory_report`);
         return response.data;
     } catch (error) {
         console.error("Error fetching inventory report:", error);
@@ -70,12 +43,7 @@ export const getInventoryReport = async () => {
 // Fetch all inventory records with secure headers and error handling
 export const fetchInventory = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/inventory/all`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get(`/inventory/all`);
         return response.data.inventory;
     } catch (error) {
         console.error("Error fetching inventory:", error);
@@ -87,12 +55,7 @@ export const fetchInventory = async () => {
 export const addInventory = async (inventoryData) => {
     if (typeof inventoryData !== 'object') throw new Error("Invalid inventory data.");
     try {
-        const response = await axios.post(`${apiUrl}/inventory/add`, inventoryData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await api.post(`/inventory/add`, inventoryData);
         return response.data;
     } catch (error) {
         console.error("Error adding inventory:", error);

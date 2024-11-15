@@ -1,9 +1,11 @@
+// components/ActivityLogs.js
+
 // Import essential modules and components from React and MUI libraries
 import React, { useState, useEffect } from 'react';
-import { fetchActivityLogs } from '../services/userService';
+import { fetchActivityLogs } from '../services/userService'; // Ensure this service uses the centralized Axios instance
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Snackbar, Alert } from '@mui/material';
 
-function ActivityLogs({ token }) {
+function ActivityLogs() { // Removed 'token' prop
     // State to store activity logs fetched from API
     const [logs, setLogs] = useState([]);
     const [error, setError] = useState(null); // Error state for handling fetch issues
@@ -11,11 +13,11 @@ function ActivityLogs({ token }) {
     const [alertSeverity, setAlertSeverity] = useState('info'); // Severity for Snackbar
     const [alertMessage, setAlertMessage] = useState(''); // Message for Snackbar feedback
 
-    // Fetch activity logs on component mount or when token changes
+    // Fetch activity logs on component mount
     useEffect(() => {
         const getActivityLogs = async () => {
             try {
-                const data = await fetchActivityLogs(token); // Fetch logs with provided token
+                const data = await fetchActivityLogs(); // Fetch logs without passing token
                 setLogs(data); // Update logs state with fetched data
                 setError(null); // Clear any previous errors
             } catch (error) {
@@ -28,7 +30,7 @@ function ActivityLogs({ token }) {
         };
 
         getActivityLogs(); // Call fetch function
-    }, [token]); // Dependency array watches for token changes
+    }, []); // Removed 'token' from dependency array
 
     // Close Snackbar after a delay or on user interaction
     const handleCloseAlert = () => setAlertOpen(false);

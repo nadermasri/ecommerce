@@ -1,23 +1,14 @@
-//authentic_lebanese_sentiment_shop/frontend/src/services/authService.js
-import axios from 'axios';
+// frontend/src/services/authService.js
+import api from './api';
 
-const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
-
-// Login function with input validation and error handling
+// Login function
 export const login = async (username, password) => {
     if (typeof username !== 'string' || typeof password !== 'string') {
         throw new Error("Invalid username or password.");
     }
     try {
-        const response = await axios.post(`${apiUrl}/user/login`, { username, password }, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        // Store the auth token securely
-        if (response.data && response.data.token) {
-            localStorage.setItem('authToken', response.data.token);
-        }
+        const response = await api.post('/user/login', { username, password });
+        // No need to store the JWT token in localStorage
         return response.data;
     } catch (error) {
         console.error("Error during login:", error);
@@ -25,10 +16,11 @@ export const login = async (username, password) => {
     }
 };
 
-// Logout function to clear the auth token
-export const logout = () => {
+// Logout function
+export const logout = async () => {
     try {
-        localStorage.removeItem('authToken');
+        // Ensure your backend has a logout endpoint that clears the cookies
+        await api.post('/user/logout');
     } catch (error) {
         console.error("Error during logout:", error);
         throw new Error("Failed to logout.");

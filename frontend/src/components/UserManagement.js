@@ -1,4 +1,5 @@
-//components/UserManagement.js
+// components/UserManagement.js
+
 import React, { useState, useEffect } from 'react';
 import {
     fetchUsers,
@@ -22,14 +23,21 @@ import {
     Box,
     Select,
     MenuItem,
-    Alert
+    Alert,
+    IconButton
 } from '@mui/material';
+import { Edit, Delete } from '@mui/icons-material';
 
 function UserManagement() {
+    // State variables for users and admin users
     const [users, setUsers] = useState([]);
     const [adminUsers, setAdminUsers] = useState([]);
+    
+    // State variables for editing users and admins
     const [editingUser, setEditingUser] = useState(null);
     const [editingAdmin, setEditingAdmin] = useState(null);
+    
+    // State variables for form data
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -51,9 +59,12 @@ function UserManagement() {
         password: '',
         role: 'InventoryManager'
     });
+    
+    // State variables for feedback messages
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
 
+    // Fetch regular users on component mount
     useEffect(() => {
         const fetchAllUsers = async () => {
             try {
@@ -67,6 +78,7 @@ function UserManagement() {
         fetchAllUsers();
     }, []);
 
+    // Handler to fetch admin users
     const handleFetchAdminUsers = async () => {
         try {
             const admins = await fetchAdminUsers();
@@ -77,6 +89,7 @@ function UserManagement() {
         }
     };
 
+    // Handler to initiate editing a regular user
     const handleEditUser = (user) => {
         setEditingUser(user);
         setEditingAdmin(null); // Close admin form if open
@@ -89,50 +102,62 @@ function UserManagement() {
             preferences: user.preferences || {},
             password: ''
         });
+        setError(null); // Clear any existing errors
+        setSuccess(null); // Clear any existing success messages
     };
 
+    // Handler to initiate editing an admin user
     const handleEditAdmin = (admin) => {
         setEditingAdmin(admin);
-        setEditingUser(null); // Close user form if open
+        setEditingUser(null); // Close regular user form if open
         setAdminFormData({
             username: admin.username,
             email: admin.email,
             role: admin.role,
             password: ''
         });
+        setError(null); // Clear any existing errors
+        setSuccess(null); // Clear any existing success messages
     };
 
+    // Handler for regular user form input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
+    // Handler for admin user form input changes
     const handleAdminInputChange = (e) => {
         const { name, value } = e.target;
         setAdminFormData({ ...adminFormData, [name]: value });
     };
 
+    // Handler for new admin form input changes
     const handleNewAdminInputChange = (e) => {
         const { name, value } = e.target;
         setNewAdminData({ ...newAdminData, [name]: value });
     };
-    // Username validation to allow only alphanumeric characters and underscores, no spaces or special characters
+
+    // Username validation: only alphanumeric characters and underscores
     const validateUsername = (username) => /^[a-zA-Z0-9_]+$/.test(username);
 
+    // Email validation: basic regex
     const validateEmail = (email) => /\S+@\S+\.\S+/.test(email);
+
+    // Password validation: minimum 8 characters
     const validatePassword = (password) => password.length >= 8;
 
+    // Handler to create a new admin
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
         setError(null);
         setSuccess(null);
-        // Validate username format
+        
+        // Validate input fields
         if (!validateUsername(newAdminData.username)) {
             setError("Username can only contain letters, numbers, and underscores.");
             return;
         }
-        
-
         if (!validateEmail(newAdminData.email)) {
             setError("Invalid email format.");
             return;
@@ -146,13 +171,14 @@ function UserManagement() {
             await createAdmin(newAdminData.username, newAdminData.email, newAdminData.password, newAdminData.role);
             setSuccess("Admin created successfully!");
             setNewAdminData({ username: '', email: '', password: '', role: 'InventoryManager' });
-            handleFetchAdminUsers();
+            handleFetchAdminUsers(); // Refresh admin users list
         } catch (error) {
             console.error("Failed to create admin:", error);
-            setError(error.response?.data || "Failed to create admin.");
+            setError(error.response?.data?.error || "Failed to create admin.");
         }
     };
 
+    // Handler to update a regular user
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         setError(null);
@@ -164,6 +190,16 @@ function UserManagement() {
                 setError("Username can only contain letters, numbers, and underscores.");
                 return;
             }
+            // Optional: Validate email and password if necessary
+            if (formData.email && !validateEmail(formData.email)) {
+                setError("Invalid email format.");
+                return;
+            }
+            if (formData.password && !validatePassword(formData.password)) {
+                setError("Password must be at least 8 characters.");
+                return;
+            }
+
             try {
                 await updateUserProfile(editingUser.id, formData);
                 setSuccess("User updated successfully!");
@@ -172,21 +208,33 @@ function UserManagement() {
                 setEditingUser(null);
             } catch (error) {
                 console.error("Failed to update user:", error);
-                setError("Failed to update user.");
+                setError(error.response?.data?.error || "Failed to update user.");
             }
         }
     };
 
+    // Handler to update an admin user
     const handleUpdateAdmin = async (e) => {
         e.preventDefault();
         setError(null);
         setSuccess(null);
 
         if (editingAdmin) {
+            // Validate username format
             if (!validateUsername(adminFormData.username)) {
                 setError("Username can only contain letters, numbers, and underscores.");
                 return;
             }
+            // Optional: Validate email and password if necessary
+            if (adminFormData.email && !validateEmail(adminFormData.email)) {
+                setError("Invalid email format.");
+                return;
+            }
+            if (adminFormData.password && !validatePassword(adminFormData.password)) {
+                setError("Password must be at least 8 characters.");
+                return;
+            }
+
             try {
                 await updateAdminUser(editingAdmin.id, adminFormData);
                 setSuccess("Admin updated successfully!");
@@ -195,11 +243,12 @@ function UserManagement() {
                 setEditingAdmin(null);
             } catch (error) {
                 console.error("Failed to update admin:", error);
-                setError("Failed to update admin.");
+                setError(error.response?.data?.error || "Failed to update admin.");
             }
         }
     };
 
+    // Handler to delete a regular user
     const handleDeleteUser = async (id) => {
         setError(null);
         setSuccess(null);
@@ -210,10 +259,11 @@ function UserManagement() {
             setUsers(updatedUsers);
         } catch (error) {
             console.error("Failed to delete user:", error);
-            setError("Failed to delete user.");
+            setError(error.response?.data?.error || "Failed to delete user.");
         }
     };
 
+    // Handler to delete an admin user
     const handleDeleteAdmin = async (id) => {
         setError(null);
         setSuccess(null);
@@ -224,7 +274,7 @@ function UserManagement() {
             setAdminUsers(updatedAdmins);
         } catch (error) {
             console.error("Failed to delete admin:", error);
-            setError("Failed to delete admin.");
+            setError(error.response?.data?.error || "Failed to delete admin.");
         }
     };
 
@@ -232,10 +282,12 @@ function UserManagement() {
         <Container maxWidth="md">
             <Typography variant="h4" align="center" gutterBottom>Manage Users</Typography>
 
+            {/* Display error and success alerts */}
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
             {/* Regular Users Table */}
+            <Typography variant="h6" gutterBottom>Regular Users</Typography>
             <Table>
                 <TableHead>
                     <TableRow>
@@ -254,10 +306,19 @@ function UserManagement() {
                             <TableCell>{user.email}</TableCell>
                             <TableCell>{user.membership_tier}</TableCell>
                             <TableCell>
-                                <Button variant="contained" color="primary" onClick={() => handleEditUser(user)} sx={{ marginRight: 1 }}>
+                                <Button 
+                                    variant="contained" 
+                                    color="primary" 
+                                    onClick={() => handleEditUser(user)} 
+                                    sx={{ marginRight: 1 }}
+                                >
                                     Update
                                 </Button>
-                                <Button variant="contained" color="secondary" onClick={() => handleDeleteUser(user.id)}>
+                                <Button 
+                                    variant="contained" 
+                                    color="secondary" 
+                                    onClick={() => handleDeleteUser(user.id)}
+                                >
                                     Delete
                                 </Button>
                             </TableCell>
@@ -279,6 +340,8 @@ function UserManagement() {
                             fullWidth
                             margin="normal"
                             required
+                            error={formData.username && !validateUsername(formData.username)}
+                            helperText={formData.username && !validateUsername(formData.username) ? "Only letters, numbers, and underscores are allowed." : ""}
                         />
                         <TextField
                             label="Email"
@@ -288,6 +351,8 @@ function UserManagement() {
                             fullWidth
                             margin="normal"
                             required
+                            error={formData.email && !validateEmail(formData.email)}
+                            helperText={formData.email && !validateEmail(formData.email) ? "Invalid email format." : ""}
                         />
                         <TextField
                             label="Address"
@@ -317,39 +382,57 @@ function UserManagement() {
                 </Box>
             )}
 
-            {/* Admin Users Table */}
-            <Button variant="contained" color="primary" onClick={handleFetchAdminUsers} fullWidth sx={{ marginY: 2 }}>
-                View Admin Users
-            </Button>
-            <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>ID</TableCell>
-                        <TableCell>Username</TableCell>
-                        <TableCell>Email</TableCell>
-                        <TableCell>Role</TableCell>
-                        <TableCell>Actions</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {adminUsers.map(admin => (
-                        <TableRow key={admin.id}>
-                            <TableCell>{admin.id}</TableCell>
-                            <TableCell>{admin.username}</TableCell>
-                            <TableCell>{admin.email}</TableCell>
-                            <TableCell>{admin.role}</TableCell>
-                            <TableCell>
-                                <Button variant="contained" color="primary" onClick={() => handleEditAdmin(admin)} sx={{ marginRight: 1 }}>
-                                    Update
-                                </Button>
-                                <Button variant="contained" color="secondary" onClick={() => handleDeleteAdmin(admin.id)}>
-                                    Delete
-                                </Button>
-                            </TableCell>
+            {/* Admin Users Section */}
+            <Box marginTop={6}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h6" gutterBottom>Admin Users</Typography>
+                    <Button 
+                        variant="contained" 
+                        color="primary" 
+                        onClick={handleFetchAdminUsers}
+                    >
+                        Refresh Admin Users
+                    </Button>
+                </Box>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>ID</TableCell>
+                            <TableCell>Username</TableCell>
+                            <TableCell>Email</TableCell>
+                            <TableCell>Role</TableCell>
+                            <TableCell>Actions</TableCell>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHead>
+                    <TableBody>
+                        {adminUsers.map(admin => (
+                            <TableRow key={admin.id}>
+                                <TableCell>{admin.id}</TableCell>
+                                <TableCell>{admin.username}</TableCell>
+                                <TableCell>{admin.email}</TableCell>
+                                <TableCell>{admin.role}</TableCell>
+                                <TableCell>
+                                    <Button 
+                                        variant="contained" 
+                                        color="primary" 
+                                        onClick={() => handleEditAdmin(admin)} 
+                                        sx={{ marginRight: 1 }}
+                                    >
+                                        Update
+                                    </Button>
+                                    <Button 
+                                        variant="contained" 
+                                        color="secondary" 
+                                        onClick={() => handleDeleteAdmin(admin.id)}
+                                    >
+                                        Delete
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </Box>
 
             {/* Update Admin Form */}
             {editingAdmin && (
@@ -364,6 +447,8 @@ function UserManagement() {
                             fullWidth
                             margin="normal"
                             required
+                            error={adminFormData.username && !validateUsername(adminFormData.username)}
+                            helperText={adminFormData.username && !validateUsername(adminFormData.username) ? "Only letters, numbers, and underscores are allowed." : ""}
                         />
                         <TextField
                             label="Email"
@@ -373,8 +458,11 @@ function UserManagement() {
                             fullWidth
                             margin="normal"
                             required
+                            error={adminFormData.email && !validateEmail(adminFormData.email)}
+                            helperText={adminFormData.email && !validateEmail(adminFormData.email) ? "Invalid email format." : ""}
                         />
                         <Select
+                            label="Role"
                             name="role"
                             value={adminFormData.role}
                             onChange={handleAdminInputChange}
@@ -396,6 +484,8 @@ function UserManagement() {
                             fullWidth
                             margin="normal"
                             required
+                            error={adminFormData.password && !validatePassword(adminFormData.password)}
+                            helperText={adminFormData.password && !validatePassword(adminFormData.password) ? "Password must be at least 8 characters." : ""}
                         />
                         <Box display="flex" gap={2} marginTop={2}>
                             <Button variant="contained" color="primary" type="submit" fullWidth>
@@ -410,7 +500,7 @@ function UserManagement() {
             )}
 
             {/* Create New Admin Form */}
-            <Box marginTop={4}>
+            <Box marginTop={6}>
                 <Typography variant="h6" gutterBottom>Create New Admin</Typography>
                 <form onSubmit={handleCreateAdmin}>
                     <TextField
@@ -421,8 +511,8 @@ function UserManagement() {
                         fullWidth
                         margin="normal"
                         required
-                        error={!validateUsername(newAdminData.username)}
-                        helperText={!validateUsername(newAdminData.username) ? "Username can only contain letters, numbers, and underscores" : ""}
+                        error={newAdminData.username && !validateUsername(newAdminData.username)}
+                        helperText={newAdminData.username && !validateUsername(newAdminData.username) ? "Only letters, numbers, and underscores are allowed." : ""}
                     />
                     <TextField
                         label="Email"
@@ -432,8 +522,8 @@ function UserManagement() {
                         fullWidth
                         margin="normal"
                         required
-                        error={!validateEmail(newAdminData.email)}
-                        helperText={!validateEmail(newAdminData.email) ? "Invalid email format" : ""}
+                        error={newAdminData.email && !validateEmail(newAdminData.email)}
+                        helperText={newAdminData.email && !validateEmail(newAdminData.email) ? "Invalid email format." : ""}
                     />
                     <TextField
                         label="Password"
@@ -444,10 +534,11 @@ function UserManagement() {
                         fullWidth
                         margin="normal"
                         required
-                        error={!validatePassword(newAdminData.password)}
-                        helperText={!validatePassword(newAdminData.password) ? "Password must be at least 8 characters" : ""}
+                        error={newAdminData.password && !validatePassword(newAdminData.password)}
+                        helperText={newAdminData.password && !validatePassword(newAdminData.password) ? "Password must be at least 8 characters." : ""}
                     />
                     <Select
+                        label="Role"
                         name="role"
                         value={newAdminData.role}
                         onChange={handleNewAdminInputChange}
@@ -460,7 +551,13 @@ function UserManagement() {
                         <MenuItem value="ProductManager">Product Manager</MenuItem>
                         <MenuItem value="SuperAdmin">Super Admin</MenuItem>
                     </Select>
-                    <Button variant="contained" color="primary" type="submit" fullWidth sx={{ marginTop: 2 }}>
+                    <Button 
+                        variant="contained" 
+                        color="primary" 
+                        type="submit" 
+                        fullWidth 
+                        sx={{ marginTop: 2 }}
+                    >
                         Create Admin
                     </Button>
                 </form>

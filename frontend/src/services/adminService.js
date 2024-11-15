@@ -1,15 +1,5 @@
-import axios from 'axios';
-
-const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
-
-// Helper function for secure token retrieval
-const getAuthToken = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        throw new Error("Authorization token is missing.");
-    }
-    return token;
-};
+// services/adminService.js
+import api from './api';
 
 // Create a new admin user with input validation and error handling
 export const createAdmin = async (username, email, password, role) => {
@@ -24,15 +14,9 @@ export const createAdmin = async (username, email, password, role) => {
     }
     
     try {
-        const response = await axios.post(
-            `${apiUrl}/user/admins/create`,
-            { username, email, password, role },
-            {
-                headers: {
-                    Authorization: `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json',
-                },
-            }
+        const response = await api.post(
+            `/user/admins/create`,
+            { username, email, password, role }
         );
         return response.data;
     } catch (error) {

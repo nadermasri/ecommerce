@@ -31,11 +31,15 @@ def create_jwt_token(user):
 def verify_jwt(token):
     try:
         payload = pyjwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        print(f"Decoded payload: {payload}")  # Debugging
         return payload
     except pyjwt.ExpiredSignatureError:
+        print("Token expired")  # Debugging
         abort(401, "Token expired, please log in again")
     except pyjwt.InvalidTokenError:
+        print("Invalid token")  # Debugging
         abort(401, "Invalid token, please log in")
+
 
 #To protect routes with JWT authentication
 def jwt_required(f):
@@ -108,6 +112,8 @@ def register_user():
         return jsonify({"error": str(e)}), 500
 
 # Login route for both regular users and admin users
+# In services/users/routes.py
+
 @users_bp.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -121,8 +127,28 @@ def login():
 
         # Set JWT token as HTTP-only cookie and CSRF token as accessible cookie
         response = make_response(jsonify({"message": "Login successful"}))
-        response.set_cookie('jwt_token', jwt_token, httponly=True, samesite='Lax', path='/')  # HTTP-only JWT cookie
-        response.set_cookie('csrf_token', csrf_token, samesite='Lax')  # Accessible CSRF token
+        # Adjust cookie settings
+        response.set_cookie(
+            'jwt_token',
+            jwt_token,
+            httponly=True,
+            samesite='Lax',  # Changed from 'None' to 'Lax' for development
+            secure=False,     # Set to True in production
+            path='/'
+            # Removed 'domain' parameter
+        )
+        response.set_cookie(
+            'csrf_token',
+            csrf_token,
+            httponly=False,
+            samesite='Lax',  # Changed from 'None' to 'Lax' for development
+            secure=False,     # Set to True in production
+            path='/'
+            # Removed 'domain' parameter
+        )
+
+        print("JWT token being set:", jwt_token)
+        print("CSRF token being set:", csrf_token)
 
         return response, 200
     else:
@@ -334,4 +360,37 @@ def get_activity_logs():
 
     return jsonify([log.to_dict() for log in logs]), 200
 
+# In services/users/routes.py
+
+@users_bp.route('/me', methods=['GET'])
+@jwt_required
+def get_current_user():
+    user = User.query.get_or_404(request.user_id)
+    return jsonify(user.to_dict()), 200
+
+# In services/users/routes.py
+
+@users_bp.route('/logout', methods=['POST'])
+@jwt_required
+def logout():
+    response = make_response(jsonify({"message": "Logged out successfully"}), 200)
+    response.set_cookie(
+        'jwt_token',
+        '',
+        expires=0,
+        httponly=True,
+        samesite='Lax',  # Changed from 'None' to 'Lax' for development
+        secure=False,     # Set to True in production
+        path='/'
+    )
+    response.set_cookie(
+        'csrf_token',
+        '',
+        expires=0,
+        httponly=False,
+        samesite='Lax',  # Changed from 'None' to 'Lax' for development
+        secure=False,     # Set to True in production
+        path='/'
+    )
+    return response
 

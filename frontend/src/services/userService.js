@@ -1,26 +1,10 @@
-//services/userService.js
-import axios from 'axios';
-
-const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
-
-// Helper function for secure token retrieval
-const getAuthToken = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        throw new Error("Authorization token is missing.");
-    }
-    return token;
-};
+// frontend/src/services/userService.js
+import api from './api';
 
 // Fetch users with error handling and secure headers
 export const fetchUsers = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/user/`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-cache',
-            },
-        });
+        const response = await api.get('/user/');
         return response.data;
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -32,12 +16,7 @@ export const fetchUsers = async () => {
 export const deleteUser = async (userId) => {
     if (typeof userId !== 'string') throw new Error("Invalid userId.");
     try {
-        const response = await axios.delete(`${apiUrl}/user/${encodeURIComponent(userId)}`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.delete(`/user/${encodeURIComponent(userId)}`);
         return response.data;
     } catch (error) {
         console.error('Error deleting user:', error);
@@ -49,12 +28,7 @@ export const deleteUser = async (userId) => {
 export const updateUserProfile = async (userId, updatedData) => {
     if (typeof userId !== 'string' || typeof updatedData !== 'object') throw new Error("Invalid input.");
     try {
-        const response = await axios.put(`${apiUrl}/user/users/${encodeURIComponent(userId)}/profile`, updatedData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await api.put(`/user/users/${encodeURIComponent(userId)}/profile`, updatedData);
         return response.data;
     } catch (error) {
         console.error('Error updating profile:', error);
@@ -66,12 +40,7 @@ export const updateUserProfile = async (userId, updatedData) => {
 export const fetchUserProfile = async (userId) => {
     if (typeof userId !== 'string') throw new Error("Invalid userId.");
     try {
-        const response = await axios.get(`${apiUrl}/user/users/${encodeURIComponent(userId)}/profile`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get(`/user/users/${encodeURIComponent(userId)}/profile`);
         return response.data;
     } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -82,12 +51,7 @@ export const fetchUserProfile = async (userId) => {
 // Fetch activity logs with secure handling
 export const fetchActivityLogs = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/user/admin/activity_logs`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get('/user/admin/activity_logs');
         return response.data;
     } catch (error) {
         console.error("Failed to fetch activity logs:", error);
@@ -101,15 +65,7 @@ export const createAdmin = async (username, email, password, role) => {
         throw new Error("Invalid input data.");
     }
     try {
-        const response = await axios.post(`${apiUrl}/user/admins/create`, 
-            { username, email, password, role },
-            {
-                headers: {
-                    Authorization: `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        const response = await api.post('/user/admins/create', { username, email, password, role });
         return response.data;
     } catch (error) {
         console.error("Error creating admin user:", error);
@@ -120,12 +76,7 @@ export const createAdmin = async (username, email, password, role) => {
 // Fetch all admin users with secure handling
 export const fetchAdminUsers = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/user/admins`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get('/user/admins');
         return response.data;
     } catch (error) {
         console.error('Error fetching admin users:', error);
@@ -137,12 +88,7 @@ export const fetchAdminUsers = async () => {
 export const updateAdminUser = async (userId, updatedData) => {
     if (typeof userId !== 'string' || typeof updatedData !== 'object') throw new Error("Invalid input.");
     try {
-        const response = await axios.put(`${apiUrl}/user/admins/${encodeURIComponent(userId)}`, updatedData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await api.put(`/user/admins/${encodeURIComponent(userId)}`, updatedData);
         return response.data;
     } catch (error) {
         console.error("Error updating admin user:", error);
@@ -154,12 +100,7 @@ export const updateAdminUser = async (userId, updatedData) => {
 export const deleteAdminUser = async (userId) => {
     if (typeof userId !== 'string') throw new Error("Invalid userId.");
     try {
-        const response = await axios.delete(`${apiUrl}/user/admins/${encodeURIComponent(userId)}`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.delete(`/user/admins/${encodeURIComponent(userId)}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting admin user:", error);

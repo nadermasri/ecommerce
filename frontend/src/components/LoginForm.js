@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { login } from '../services/authService';
+// frontend/src/components/LoginForm.js
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button, Container, Typography, CircularProgress, InputAdornment, FormControl, InputLabel, OutlinedInput } from '@mui/material';
 import { AccountCircle, Visibility, VisibilityOff } from '@mui/icons-material';
 
 function LoginForm() {
+    const { loginUser } = useContext(AuthContext);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,31 +16,20 @@ function LoginForm() {
 
     // Handler for logging in
     const handleLogin = async () => {
-        setError(''); // Reset error message before each attempt
-
-        // Simple input validation to ensure both fields are filled
+        setError(''); // Clear previous errors
         if (!username || !password) {
-            setError('Please enter both username and password'); // Prevents empty submissions
+            setError('Please enter both username and password');
             return;
         }
 
-        setLoading(true); // Show loading spinner to prevent multiple submissions
-
+        setLoading(true);
         try {
-            // Attempt login with provided credentials
-            const data = await login(username, password);
-
-            // Store token securely in local storage
-            // Storing the auth token allows secured API requests in future sessions
-            localStorage.setItem('authToken', data.token);
-
-            // Redirect to protected dashboard after successful login
-            navigate('/dashboard');
-        } catch (error) {
-            // Display a generic error to avoid revealing sensitive information
-            setError('Login failed. Please try again.'); // Avoids exposure of login failure details
+            await loginUser(username, password); // Login via AuthContext
+            navigate('/dashboard/home'); // Redirect to dashboard home
+        } catch (err) {
+            setError(err.message || 'Login failed. Please try again.');
         } finally {
-            setLoading(false); // Hide loading spinner after response
+            setLoading(false);
         }
     };
 

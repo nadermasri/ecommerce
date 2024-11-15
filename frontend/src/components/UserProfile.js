@@ -1,7 +1,20 @@
 // src/components/UserProfile.js
+
 import React, { useState, useEffect } from 'react';
 import { updateUserProfile, fetchUsers } from '../services/userService';
-import { TextField, Button, Typography, Box, Alert, Stack } from '@mui/material';
+import {
+    TextField,
+    Button,
+    Typography,
+    Box,
+    Alert,
+    Stack,
+    Snackbar,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
+} from '@mui/material';
 
 function UserProfile({ userId }) {
     const [user, setUser] = useState({
@@ -14,8 +27,9 @@ function UserProfile({ userId }) {
         preferences: '{}', // Default as JSON string
         password: ''
     });
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(null);
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertSeverity, setAlertSeverity] = useState('info');
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -25,12 +39,19 @@ function UserProfile({ userId }) {
                 if (currentUser) {
                     setUser({
                         ...currentUser,
-                        wishlist: JSON.stringify(currentUser.wishlist), // Store as JSON string
-                        preferences: JSON.stringify(currentUser.preferences) // Store as JSON string
+                        wishlist: JSON.stringify(currentUser.wishlist || []), // Ensure default empty array
+                        preferences: JSON.stringify(currentUser.preferences || {}) // Ensure default empty object
                     });
+                } else {
+                    setAlertMessage("User not found.");
+                    setAlertSeverity("error");
+                    setAlertOpen(true);
                 }
             } catch (error) {
-                setError("Failed to load user profile.");
+                console.error("Error fetching user profile:", error);
+                setAlertMessage("Failed to load user profile.");
+                setAlertSeverity("error");
+                setAlertOpen(true);
             }
         };
 
@@ -54,10 +75,15 @@ function UserProfile({ userId }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Reset alerts
+        setAlertMessage('');
+        setAlertSeverity('info');
+
         // Validate JSON fields
         if (!validateJSONField(user.wishlist) || !validateJSONField(user.preferences)) {
-            setError("Invalid JSON format in Wishlist or Preferences.");
-            setSuccess(null);
+            setAlertMessage("Invalid JSON format in Wishlist or Preferences.");
+            setAlertSeverity("error");
+            setAlertOpen(true);
             return;
         }
 
@@ -70,16 +96,24 @@ function UserProfile({ userId }) {
 
             setUser({
                 ...updatedUser,
-                wishlist: JSON.stringify(updatedUser.wishlist), // Store as JSON string
-                preferences: JSON.stringify(updatedUser.preferences) // Store as JSON string
+                wishlist: JSON.stringify(updatedUser.wishlist || []),
+                preferences: JSON.stringify(updatedUser.preferences || {})
             });
 
-            setSuccess("Profile updated successfully!");
-            setError(null);
+            setAlertMessage("Profile updated successfully!");
+            setAlertSeverity("success");
+            setAlertOpen(true);
         } catch (error) {
-            setError("Failed to update profile. Please try again.");
-            setSuccess(null);
+            console.error("Failed to update profile:", error);
+            setAlertMessage("Failed to update profile. Please try again.");
+            setAlertSeverity("error");
+            setAlertOpen(true);
         }
+    };
+
+    const handleCloseAlert = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setAlertOpen(false);
     };
 
     return (
@@ -87,8 +121,18 @@ function UserProfile({ userId }) {
             <Typography variant="h4" gutterBottom>
                 Edit Profile
             </Typography>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
+            {/* Snackbar alert for feedback */}
+            <Snackbar
+                open={alertOpen}
+                autoHideDuration={6000}
+                onClose={handleCloseAlert}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={handleCloseAlert} severity={alertSeverity} sx={{ width: '100%' }}>
+                    {alertMessage}
+                </Alert>
+            </Snackbar>
 
             <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
@@ -100,6 +144,8 @@ function UserProfile({ userId }) {
                         value={user.username}
                         onChange={handleChange}
                         required
+                        inputProps={{ maxLength: 30 }}
+                        helperText="Username can only contain letters and numbers, with no spaces or special characters."
                     />
                     <TextField
                         label="Email"
@@ -110,6 +156,7 @@ function UserProfile({ userId }) {
                         value={user.email}
                         onChange={handleChange}
                         required
+                        inputProps={{ maxLength: 50 }}
                     />
                     <TextField
                         label="Address"
@@ -118,6 +165,8 @@ function UserProfile({ userId }) {
                         name="address"
                         value={user.address}
                         onChange={handleChange}
+                        multiline
+                        rows={2}
                     />
                     <TextField
                         label="Phone Number"
@@ -126,15 +175,21 @@ function UserProfile({ userId }) {
                         name="phone_number"
                         value={user.phone_number}
                         onChange={handleChange}
+                        helperText="Format: digits, spaces, or hyphens (7-15 characters)."
                     />
-                    <TextField
-                        label="Membership Tier"
-                        variant="outlined"
-                        fullWidth
-                        name="membership_tier"
-                        value={user.membership_tier}
-                        onChange={handleChange}
-                    />
+                    <FormControl fullWidth required>
+                        <InputLabel>Membership Tier</InputLabel>
+                        <Select
+                            name="membership_tier"
+                            value={user.membership_tier}
+                            onChange={handleChange}
+                            label="Membership Tier"
+                        >
+                            <MenuItem value="Normal">Normal</MenuItem>
+                            <MenuItem value="Premium">Premium</MenuItem>
+                            <MenuItem value="VIP">VIP</MenuItem>
+                        </Select>
+                    </FormControl>
                     <TextField
                         label="Wishlist (JSON)"
                         variant="outlined"
@@ -145,7 +200,7 @@ function UserProfile({ userId }) {
                         multiline
                         rows={3}
                         error={!validateJSONField(user.wishlist)}
-                        helperText={!validateJSONField(user.wishlist) ? "Invalid JSON format" : ""}
+                        helperText={!validateJSONField(user.wishlist) ? "Invalid JSON format" : "Enter wishlist items as a JSON array, e.g., [\"Item1\", \"Item2\"]"}
                     />
                     <TextField
                         label="Preferences (JSON)"
@@ -157,7 +212,7 @@ function UserProfile({ userId }) {
                         multiline
                         rows={3}
                         error={!validateJSONField(user.preferences)}
-                        helperText={!validateJSONField(user.preferences) ? "Invalid JSON format" : ""}
+                        helperText={!validateJSONField(user.preferences) ? "Invalid JSON format" : "Enter preferences as a JSON object, e.g., {\"theme\":\"dark\"}"}
                     />
                     <TextField
                         label="Password"
@@ -168,6 +223,7 @@ function UserProfile({ userId }) {
                         value={user.password || ''}
                         onChange={handleChange}
                         autoComplete="new-password"
+                        helperText="Leave blank to keep existing password."
                     />
                     <Button type="submit" variant="contained" color="primary" fullWidth>
                         Save Changes
@@ -176,6 +232,6 @@ function UserProfile({ userId }) {
             </form>
         </Box>
     );
-}
+    }
 
-export default UserProfile;
+    export default UserProfile;

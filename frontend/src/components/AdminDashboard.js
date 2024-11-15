@@ -1,7 +1,7 @@
-//components/AdminDashboard.js
+// components/AdminDashboard.js
 
-// Import necessary modules and components from React and MUI
-import React, { useEffect } from 'react';
+// Import necessary modules and components from React and MUI libraries
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Button, IconButton, Menu, MenuItem, Avatar,
@@ -27,21 +27,14 @@ import SubcategoryManagement from './SubcategoryManagement';
 
 function AdminDashboard() {
   // State to manage active tab
-  const [tabIndex, setTabIndex] = React.useState(0);
+  const [tabIndex, setTabIndex] = useState(0);
   // State to manage sidebar visibility
-  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   // State for anchor element in menu
-  const [anchorEl, setAnchorEl] = React.useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Authentication check on component mount
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      // Redirect to login if not authenticated
-      navigate('/');
-    }
-  }, [navigate]);
+  // Removed useEffect that checks for token in localStorage
 
   // Handle tab changes securely
   const handleTabChange = (event, newValue) => {
@@ -232,8 +225,7 @@ function AdminDashboard() {
               horizontal: 'right',
             }}
           >
-            <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-            <MenuItem onClick={handleMenuClose}>Settings</MenuItem>
+            {/* <MenuItem onClick={handleMenuClose}>Profile</MenuItem> */}
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
           </Menu>
         </Box>
@@ -261,5 +253,25 @@ function AdminDashboard() {
     </Box>
   );
 }
+
+// Separate card styles to enhance readability and reusability
+const cardStyles = (bgColor) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '16px',
+  backgroundColor: bgColor,
+  color: '#fff',
+  borderRadius: '12px',
+  transition: 'transform 0.3s',
+  '&:hover': { transform: 'scale(1.05)' },
+});
+
+const actionCardStyles = {
+  backgroundColor: '#fff',
+  boxShadow: 3,
+  borderRadius: '12px',
+  padding: '20px',
+};
 
 export default AdminDashboard;

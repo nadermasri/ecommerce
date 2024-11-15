@@ -1,12 +1,25 @@
 // src/components/CategoryManagement.js
-// Import necessary modules and components from React and Material-UI libraries
+
 import React, { useState, useEffect } from 'react';
 import { fetchCategories, createCategory, deleteCategory } from '../services/categoryService';
-import { TextField, Button, Container, Typography, Table, TableHead, TableRow, TableCell, TableBody, IconButton, Snackbar, Alert } from '@mui/material';
+import {
+    TextField,
+    Button,
+    Container,
+    Typography,
+    Table,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableBody,
+    IconButton,
+    Snackbar,
+    Alert
+} from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 
 function CategoryManagement() {
-    // Define state variables for category data and user inputs
+    // State variables for category data and user inputs
     const [categories, setCategories] = useState([]); // Stores all categories
     const [categoryName, setCategoryName] = useState(''); // Stores new category name input
     const [description, setDescription] = useState(''); // Stores new category description input
@@ -44,7 +57,7 @@ function CategoryManagement() {
         }
 
         try {
-            const newCategory = { name: categoryName, description }; // New category data
+            const newCategory = { name: categoryName.trim(), description: description.trim() }; // New category data
             const createdCategory = await createCategory(newCategory); // API call to create category
             setCategories([...categories, createdCategory]); // Update category list with new category
             setCategoryName(''); // Clear input fields after successful add
@@ -62,6 +75,7 @@ function CategoryManagement() {
 
     // Handler for deleting a category by its ID
     const handleDeleteCategory = async (categoryId) => {
+        if (!window.confirm("Are you sure you want to delete this category?")) return; // Confirmation before deletion
         try {
             await deleteCategory(categoryId); // API call to delete category
             setCategories(categories.filter(category => category.id !== categoryId)); // Remove deleted category from list
@@ -77,7 +91,10 @@ function CategoryManagement() {
     };
 
     // Close Snackbar alert after display
-    const handleCloseAlert = () => setAlertOpen(false);
+    const handleCloseAlert = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setAlertOpen(false);
+    };
 
     return (
         <Container maxWidth="sm">
@@ -99,16 +116,13 @@ function CategoryManagement() {
                     onChange={(e) => setDescription(e.target.value)}
                     margin="normal"
                 />
-                <Button type="submit" variant="contained" color="primary" fullWidth>
+                <Button type="submit" variant="contained" color="primary" fullWidth sx={{ marginTop: 2 }}>
                     Add Category
                 </Button>
             </form>
 
-            {/* Alert message displayed after actions like add or delete */}
-            {alertMessage && <Typography color="error" align="center">{alertMessage}</Typography>}
-
             {/* Display a list of existing categories in a table */}
-            <Typography variant="h6" gutterBottom>Categories List</Typography>
+            <Typography variant="h6" gutterBottom sx={{ marginTop: 4 }}>Categories List</Typography>
             <Table>
                 <TableHead>
                     <TableRow>
@@ -127,7 +141,7 @@ function CategoryManagement() {
                             <TableCell>{category.description}</TableCell>
                             <TableCell>
                                 {/* Edit button placeholder for future implementation */}
-                                <IconButton color="primary" onClick={() => alert('Edit Category')}>
+                                <IconButton color="primary" onClick={() => alert('Edit Category (Not Implemented)')}>
                                     <Edit />
                                 </IconButton>
                                 {/* Delete button with confirmation */}
@@ -148,6 +162,7 @@ function CategoryManagement() {
             </Snackbar>
         </Container>
     );
+
 }
 
 export default CategoryManagement;

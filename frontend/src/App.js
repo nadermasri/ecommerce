@@ -1,35 +1,47 @@
+// frontend/src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import AdminDashboard from './components/AdminDashboard';
 import LoginForm from './components/LoginForm';
 import SignUpForm from './components/SignUpForm';
 import CreateAdminForm from './components/CreateAdminForm';
-import DashboardHome from './components/DashboardHome'; // Import the new homepage component
+import DashboardHome from './components/DashboardHome';
+import { AuthProvider, AuthContext } from './context/AuthContext';
 
-function App() {
-    const isAuthenticated = !!localStorage.getItem('authToken'); 
+function AppRoutes() {
+    const { isAuthenticated, loading } = React.useContext(AuthContext);
+
+    if (loading) return <div>Loading...</div>;
 
     return (
-        <Router>
-            <Routes>
-                {/* Login Route */}
-                <Route path="/" element={<LoginForm />} />
-                
-                {/* Dashboard Route - AdminDashboard */}
-                <Route
-                    path="/dashboard"
-                    element={isAuthenticated ? <AdminDashboard /> : <Navigate to="/" />}
-                >
-                    {/* Default Route - Home page inside AdminDashboard */}
-                    <Route path="/dashboard/home" element={<DashboardHome />} />  {/* Dashboard Home */}
-                    {/* Add other routes inside the AdminDashboard as needed */}
-                </Route>
+        <Routes>
+            {/* Login Route */}
+            <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard/home" /> : <LoginForm />} />
 
-                {/* Sign Up and Create Admin Routes */}
-                <Route path="/signup" element={<SignUpForm />} />
-                <Route path="/createAdmin" element={<CreateAdminForm />} />
-            </Routes>
-        </Router>
+            {/* Dashboard Route - AdminDashboard */}
+            <Route
+                path="/dashboard/*"
+                element={isAuthenticated ? <AdminDashboard /> : <Navigate to="/" />}
+            >
+                {/* Nested Routes */}
+                <Route path="home" element={<DashboardHome />} />
+                {/* Add other nested routes here */}
+            </Route>
+
+            {/* Sign Up and Create Admin Routes */}
+            <Route path="/signup" element={<SignUpForm />} />
+            <Route path="/createAdmin" element={<CreateAdminForm />} />
+        </Routes>
+    );
+}
+
+function App() {
+    return (
+        <AuthProvider>
+            <Router>
+                <AppRoutes />
+            </Router>
+        </AuthProvider>
     );
 }
 

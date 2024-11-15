@@ -1,4 +1,5 @@
-//components/SubcategoryManagement.js
+// src/components/SubcategoryManagement.js
+
 import React, { useState, useEffect } from 'react';
 import { fetchSubcategories, createSubcategory, deleteSubcategory } from '../services/subcategoryService';
 import { fetchCategories } from '../services/categoryService';
@@ -17,8 +18,8 @@ import {
     TableCell,
     TableBody,
     IconButton,
-    Alert,
-    Snackbar
+    Snackbar,
+    Alert
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 
@@ -27,8 +28,9 @@ function SubcategoryManagement() {
     const [subcategoryName, setSubcategoryName] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [categories, setCategories] = useState([]);
-    const [message, setMessage] = useState('');
     const [alertOpen, setAlertOpen] = useState(false);  // State to control alert visibility
+    const [alertMessage, setAlertMessage] = useState(''); // Message for Snackbar
+    const [alertSeverity, setAlertSeverity] = useState('info'); // Severity for Snackbar feedback (success, error)
 
     // Fetch categories and subcategories
     useEffect(() => {
@@ -40,58 +42,70 @@ function SubcategoryManagement() {
                 ]);
                 setSubcategories(subcategoriesData);
                 setCategories(categoriesData);
+                setAlertMessage('Data loaded successfully.');
+                setAlertSeverity('success');
+                setAlertOpen(true);
             } catch (error) {
-                setMessage('Error fetching data.');
+                console.error("Error fetching data:", error);
+                setAlertMessage('Error fetching data.');
+                setAlertSeverity('error');
                 setAlertOpen(true);
             }
         };
         fetchData();
     }, []);
 
-    // Handle success/error messages display
-    const handleAlertClose = () => {
-        setAlertOpen(false);
-    };
-
-    // Add a new subcategory with input validation and error handling
+    // Handler for adding a new subcategory
     const handleAddSubcategory = async (e) => {
         e.preventDefault();
 
         // Validate inputs to ensure subcategory name and categoryId are provided
-        if (!subcategoryName || !categoryId) {
-            setMessage('Please provide all required fields.');
+        if (!subcategoryName.trim() || !categoryId) {
+            setAlertMessage('Please provide all required fields.');
+            setAlertSeverity('error');
             setAlertOpen(true);
             return;
         }
 
         try {
-            const newSubcategory = { name: subcategoryName, category_id: categoryId };
+            const newSubcategory = { name: subcategoryName.trim(), category_id: categoryId };
             const createdSubcategory = await createSubcategory(newSubcategory);
 
             setSubcategories([...subcategories, createdSubcategory]);
             setSubcategoryName('');
             setCategoryId('');
-            setMessage('Subcategory added successfully!');
+            setAlertMessage('Subcategory added successfully!');
+            setAlertSeverity('success');
             setAlertOpen(true);
         } catch (error) {
-            setMessage('Error creating subcategory.');
+            console.error("Error creating subcategory:", error);
+            setAlertMessage('Error creating subcategory.');
+            setAlertSeverity('error');
             setAlertOpen(true);
-            console.error(error);
         }
     };
 
-    // Delete subcategory with error handling
+    // Handler for deleting subcategory with error handling
     const handleDeleteSubcategory = async (subcategoryId) => {
+        if (!window.confirm("Are you sure you want to delete this subcategory?")) return; // Confirmation before deletion
         try {
             await deleteSubcategory(subcategoryId);
             setSubcategories(subcategories.filter(subcategory => subcategory.id !== subcategoryId));
-            setMessage('Subcategory deleted successfully!');
+            setAlertMessage('Subcategory deleted successfully!');
+            setAlertSeverity('success');
             setAlertOpen(true);
         } catch (error) {
-            setMessage('Error deleting subcategory.');
+            console.error("Error deleting subcategory:", error);
+            setAlertMessage('Error deleting subcategory.');
+            setAlertSeverity('error');
             setAlertOpen(true);
-            console.error(error);
         }
+    };
+
+    // Close Snackbar alert after display
+    const handleCloseAlert = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setAlertOpen(false);
     };
 
     return (
@@ -120,7 +134,7 @@ function SubcategoryManagement() {
                         ))}
                     </Select>
                 </FormControl>
-                <Button type="submit" variant="contained" color="primary" fullWidth>
+                <Button type="submit" variant="contained" color="primary" fullWidth sx={{ marginTop: 2 }}>
                     Add Subcategory
                 </Button>
             </form>
@@ -129,15 +143,16 @@ function SubcategoryManagement() {
             <Snackbar
                 open={alertOpen}
                 autoHideDuration={6000}
-                onClose={handleAlertClose}
+                onClose={handleCloseAlert}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
             >
-                <Alert onClose={handleAlertClose} severity={message.includes('Error') ? 'error' : 'success'}>
-                    {message}
+                <Alert onClose={handleCloseAlert} severity={alertSeverity} sx={{ width: '100%' }}>
+                    {alertMessage}
                 </Alert>
             </Snackbar>
 
-            <Typography variant="h6" gutterBottom>Subcategories List</Typography>
+            {/* Subcategories List */}
+            <Typography variant="h6" gutterBottom sx={{ marginTop: 4 }}>Subcategories List</Typography>
             <Table>
                 <TableHead>
                     <TableRow>
@@ -154,9 +169,11 @@ function SubcategoryManagement() {
                             <TableCell>{subcategory.name}</TableCell>
                             <TableCell>{subcategory.category ? subcategory.category.name : 'No Category'}</TableCell>
                             <TableCell>
-                                <IconButton color="primary" onClick={() => alert('Edit Subcategory')}>
+                                {/* Edit button placeholder for future implementation */}
+                                <IconButton color="primary" onClick={() => alert('Edit Subcategory (Not Implemented)')}>
                                     <Edit />
                                 </IconButton>
+                                {/* Delete button with confirmation */}
                                 <IconButton color="secondary" onClick={() => handleDeleteSubcategory(subcategory.id)}>
                                     <Delete />
                                 </IconButton>

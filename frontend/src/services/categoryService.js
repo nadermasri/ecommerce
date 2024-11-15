@@ -1,25 +1,10 @@
-import axios from 'axios';
-
-const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
-
-// Helper function for secure token retrieval
-const getAuthToken = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        throw new Error("Authorization token is missing.");
-    }
-    return token;
-};
+// services/categoryService.js
+import api from './api';
 
 // Fetch categories with secure headers and error handling
 export const fetchCategories = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/products/categories`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get(`/products/categories`);
         return response.data;
     } catch (error) {
         console.error("Error fetching categories:", error);
@@ -31,12 +16,7 @@ export const fetchCategories = async () => {
 export const createCategory = async (categoryData) => {
     if (typeof categoryData !== 'object') throw new Error("Invalid category data.");
     try {
-        const response = await axios.post(`${apiUrl}/products/add_categories`, categoryData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await api.post(`/products/add_categories`, categoryData);
         return response.data;
     } catch (error) {
         console.error("Error creating category:", error);
@@ -48,12 +28,7 @@ export const createCategory = async (categoryData) => {
 export const deleteCategory = async (categoryId) => {
     if (typeof categoryId !== 'string') throw new Error("Invalid categoryId.");
     try {
-        const response = await axios.delete(`${apiUrl}/products/categories/${encodeURIComponent(categoryId)}`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.delete(`/products/categories/${encodeURIComponent(categoryId)}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting category:", error);

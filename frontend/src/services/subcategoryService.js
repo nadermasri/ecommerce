@@ -1,22 +1,10 @@
-//services/subcategoryService.js
-import axios from 'axios';
+// services/subcategoryService.js
+import api from './api';
 
-const apiUrl = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
-
-const getAuthToken = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) throw new Error("Authorization token is missing.");
-    return token;
-};
-
+// Fetch subcategories with secure headers and error handling
 export const fetchSubcategories = async () => {
     try {
-        const response = await axios.get(`${apiUrl}/products/subcategories`, {
-            headers: { 
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Cache-Control': 'no-store',
-            },
-        });
+        const response = await api.get(`/products/subcategories`);
         return response.data;
     } catch (error) {
         console.error("Error fetching subcategories:", error);
@@ -24,15 +12,11 @@ export const fetchSubcategories = async () => {
     }
 };
 
+// Create a new subcategory with input validation and secure headers
 export const createSubcategory = async (subcategoryData) => {
     if (typeof subcategoryData !== 'object') throw new Error("Invalid input data.");
     try {
-        const response = await axios.post(`${apiUrl}/products/add_subcategories`, subcategoryData, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await api.post(`/products/add_subcategories`, subcategoryData);
         return response.data;
     } catch (error) {
         console.error("Error creating subcategory:", error);
@@ -40,14 +24,11 @@ export const createSubcategory = async (subcategoryData) => {
     }
 };
 
+// Delete a subcategory with input validation and secure headers
 export const deleteSubcategory = async (subcategoryId) => {
     if (typeof subcategoryId !== 'string') throw new Error("Invalid subcategoryId.");
     try {
-        const response = await axios.delete(`${apiUrl}/products/subcategories/${encodeURIComponent(subcategoryId)}`, {
-            headers: {
-                Authorization: `Bearer ${getAuthToken()}`,
-            },
-        });
+        const response = await api.delete(`/products/subcategories/${encodeURIComponent(subcategoryId)}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting subcategory:", error);
