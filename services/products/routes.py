@@ -216,7 +216,7 @@ def add_subcategory():
 # Get all products
 @products_bp.route('/', methods=['GET'])
 @jwt_required
-@role_required(['SuperAdmin', 'ProductManager'])
+@role_required(['SuperAdmin', 'ProductManager', 'InventoryManager', 'OrderManager'])
 def get_products():
     products = Product.query.all()
     return jsonify([product.to_dict() for product in products])

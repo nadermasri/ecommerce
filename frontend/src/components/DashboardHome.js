@@ -1,6 +1,6 @@
-// src/components/DashboardHome.js
+// components/DashboardHome.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Box,
     Typography,
@@ -20,7 +20,6 @@ import {
     ShoppingCart,
     Inventory,
     ListAlt,
-    History,
     AddBox
 } from '@mui/icons-material';
 import {
@@ -33,7 +32,6 @@ import {
     Line,
     ResponsiveContainer
 } from 'recharts';
-import { useNavigate } from 'react-router-dom';
 
 // Import services
 import { fetchUsers, fetchActivityLogs } from '../services/userService';
@@ -41,14 +39,11 @@ import { getProducts } from '../services/productService';
 import { getLowStockAlerts } from '../services/inventoryService';
 import { fetchOrders } from '../services/orderService';
 
-const DashboardHome = ({ setTabIndex }) => {
-  const navigate = useNavigate();
+// Import AuthContext
+import { AuthContext } from '../context/AuthContext';
 
-  // Handle navigation with tab index for consistency
-  const handleNavigate = (path, tabIndex) => {
-      setTabIndex(tabIndex);
-      navigate(path);
-  };
+const DashboardHome = ({ setTabIndex, tabLabelToIndex }) => {
+  const { user } = useContext(AuthContext);
 
   // States for data
   const [users, setUsers] = useState([]);
@@ -62,12 +57,6 @@ const DashboardHome = ({ setTabIndex }) => {
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertSeverity, setAlertSeverity] = useState('info');
-
-  // Helper function to format month labels
-  const getMonthLabel = (date) => {
-      const options = { month: 'short', year: 'numeric' };
-      return new Date(date).toLocaleDateString(undefined, options);
-  };
 
   // Function to aggregate data by month
   const aggregateDataByMonth = (usersData, productsData, ordersData) => {
@@ -117,23 +106,53 @@ const DashboardHome = ({ setTabIndex }) => {
               setLoading(true);
               setError(null); // Clear any previous errors
 
-              // Fetch users, products, orders, low stock alerts, and activity logs
-              const [usersData, ordersData, productsData, lowStockData, activityData] = await Promise.all([
-                  fetchUsers(),
-                  fetchOrders(),
-                  getProducts(),
-                  getLowStockAlerts(),
-                  fetchActivityLogs(),
-              ]);
+              let usersData = [];
+              let ordersData = [];
+              let productsData = [];
+              let lowStockData = [];
+              let activityData = [];
 
-              // Set raw data
+              if (user.role === 'SuperAdmin') {
+                  [usersData, ordersData, productsData, lowStockData, activityData] = await Promise.all([
+                      fetchUsers(),
+                      fetchOrders(),
+                      getProducts(),
+                      getLowStockAlerts(),
+                      fetchActivityLogs(),
+                  ]);
+              } else {
+                  const promises = [];
+                  if (user.role === 'ProductManager') {
+                      promises.push(getProducts());
+                  }
+                  if (user.role === 'InventoryManager') {
+                      promises.push(getLowStockAlerts());
+                  }
+                  if (user.role === 'OrderManager') {
+                      promises.push(fetchOrders());
+                  }
+                  const results = await Promise.all(promises);
+
+                  // Assign results based on the order of promises
+                  let resultIndex = 0;
+                  if (user.role === 'ProductManager') {
+                      productsData = results[resultIndex++];
+                  }
+                  if (user.role === 'InventoryManager') {
+                      lowStockData = results[resultIndex++];
+                  }
+                  if (user.role === 'OrderManager') {
+                      ordersData = results[resultIndex++];
+                  }
+              }
+
               setUsers(usersData);
               setOrders(ordersData);
               setProducts(productsData);
               setLowInventory(lowStockData.length);
               setActivityLogs(activityData);
 
-              // Aggregate data for the chart
+              // Aggregate data if necessary
               const aggregatedChartData = aggregateDataByMonth(usersData, productsData, ordersData);
               setChartData(aggregatedChartData);
 
@@ -152,7 +171,7 @@ const DashboardHome = ({ setTabIndex }) => {
       };
 
       fetchData();
-  }, []);
+  }, [user.role]);
 
   const handleCloseAlert = (event, reason) => {
       if (reason === 'clickaway') return;
@@ -174,141 +193,183 @@ const DashboardHome = ({ setTabIndex }) => {
           </Snackbar>
 
           <Grid container spacing={3} sx={{ marginBottom: '20px' }}>
-              
               {/* Total Users Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={cardStyles('#1976d2')}>
-                      <CardContent>
-                          <Typography variant="h5">Total Users</Typography>
-                          <Typography variant="h3">
-                              {loading ? <CircularProgress size={24} color="inherit" /> : users.length}
-                          </Typography>
-                      </CardContent>
-                      <IconButton>
-                          <AccountCircle sx={{ fontSize: 50, color: '#fff' }} />
-                      </IconButton>
-                  </Card>
-              </Grid>
+              {user.role === 'SuperAdmin' && (
+                  <Grid item xs={12} sm={6} md={3}>
+                      <Card sx={cardStyles('#1976d2')}>
+                          <CardContent>
+                              <Typography variant="h5">Total Users</Typography>
+                              <Typography variant="h3">
+                                  {loading ? <CircularProgress size={24} color="inherit" /> : users.length}
+                              </Typography>
+                          </CardContent>
+                          <IconButton>
+                              <AccountCircle sx={{ fontSize: 50, color: '#fff' }} />
+                          </IconButton>
+                      </Card>
+                  </Grid>
+              )}
 
               {/* Total Orders Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={cardStyles('#ff9800')}>
-                      <CardContent>
-                          <Typography variant="h5">Total Orders</Typography>
-                          <Typography variant="h3">
-                              {loading ? <CircularProgress size={24} color="inherit" /> : orders.length}
-                          </Typography>
-                      </CardContent>
-                      <IconButton>
-                          <ShoppingCart sx={{ fontSize: 50, color: '#fff' }} />
-                      </IconButton>
-                  </Card>
-              </Grid>
+              {['SuperAdmin', 'OrderManager'].includes(user.role) && (
+                  <Grid item xs={12} sm={6} md={3}>
+                      <Card sx={cardStyles('#ff9800')}>
+                          <CardContent>
+                              <Typography variant="h5">Total Orders</Typography>
+                              <Typography variant="h3">
+                                  {loading ? <CircularProgress size={24} color="inherit" /> : orders.length}
+                              </Typography>
+                          </CardContent>
+                          <IconButton>
+                              <ShoppingCart sx={{ fontSize: 50, color: '#fff' }} />
+                          </IconButton>
+                      </Card>
+                  </Grid>
+              )}
 
               {/* Total Products Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={cardStyles('#4caf50')}>
-                      <CardContent>
-                          <Typography variant="h5">Total Products</Typography>
-                          <Typography variant="h3">
-                              {loading ? <CircularProgress size={24} color="inherit" /> : products.length}
-                          </Typography>
-                      </CardContent>
-                      <IconButton>
-                          <Inventory sx={{ fontSize: 50, color: '#fff' }} />
-                      </IconButton>
-                  </Card>
-              </Grid>
+              {['SuperAdmin', 'ProductManager'].includes(user.role) && (
+                  <Grid item xs={12} sm={6} md={3}>
+                      <Card sx={cardStyles('#4caf50')}>
+                          <CardContent>
+                              <Typography variant="h5">Total Products</Typography>
+                              <Typography variant="h3">
+                                  {loading ? <CircularProgress size={24} color="inherit" /> : products.length}
+                              </Typography>
+                          </CardContent>
+                          <IconButton>
+                              <Inventory sx={{ fontSize: 50, color: '#fff' }} />
+                          </IconButton>
+                      </Card>
+                  </Grid>
+              )}
 
               {/* Low Inventory Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={cardStyles('#9c27b0')}>
-                      <CardContent>
-                          <Typography variant="h5"> Inventory</Typography>
-                          <Typography variant="h3">
-                              {loading ? <CircularProgress size={24} color="inherit" /> : lowInventory}
-                          </Typography>
-                      </CardContent>
-                      <IconButton>
-                          <ListAlt sx={{ fontSize: 50, color: '#fff' }} />
-                      </IconButton>
-                  </Card>
-              </Grid>
+              {['SuperAdmin', 'InventoryManager'].includes(user.role) && (
+                  <Grid item xs={12} sm={6} md={3}>
+                      <Card sx={cardStyles('#9c27b0')}>
+                          <CardContent>
+                              <Typography variant="h5">Low Inventory</Typography>
+                              <Typography variant="h3">
+                                  {loading ? <CircularProgress size={24} color="inherit" /> : lowInventory}
+                              </Typography>
+                          </CardContent>
+                          <IconButton>
+                              <ListAlt sx={{ fontSize: 50, color: '#fff' }} />
+                          </IconButton>
+                      </Card>
+                  </Grid>
+              )}
           </Grid>
 
           <Grid container spacing={3} sx={{ marginBottom: '20px' }}>
-              
               {/* Quick Actions Card */}
               <Grid item xs={12} sm={6} md={3}>
                   <Card sx={actionCardStyles}>
                       <CardContent>
                           <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Quick Actions</Typography>
-                          <Button
-                              variant="contained"
-                              color="primary"
-                              startIcon={<AddBox />}
-                              fullWidth
-                              sx={{ marginBottom: '10px', borderRadius: '8px' }}
-                              onClick={() => handleNavigate('/users', 1)}
-                          >
-                              Add New User
-                          </Button>
-                          <Button
-                              variant="contained"
-                              color="secondary"
-                              fullWidth
-                              sx={{ borderRadius: '8px' }}
-                              onClick={() => handleNavigate('/products', 3)}
-                          >
-                              Add New Product
-                          </Button>
+                          {user.role === 'SuperAdmin' && (
+                              <Button
+                                  variant="contained"
+                                  color="primary"
+                                  startIcon={<AddBox />}
+                                  fullWidth
+                                  sx={{ marginBottom: '10px', borderRadius: '8px' }}
+                                  onClick={() => setTabIndex(tabLabelToIndex['Users'])}
+                              >
+                                  Add New User
+                              </Button>
+                          )}
+                          {['SuperAdmin', 'ProductManager'].includes(user.role) && (
+                              <Button
+                                  variant="contained"
+                                  color="secondary"
+                                  fullWidth
+                                  sx={{ borderRadius: '8px' }}
+                                  onClick={() => setTabIndex(tabLabelToIndex['Products'])}
+                              >
+                                  Add New Product
+                              </Button>
+                          )}
+                          {['SuperAdmin', 'OrderManager'].includes(user.role) && (
+                              <Button
+                                  variant="contained"
+                                  color="success"
+                                  fullWidth
+                                  sx={{ marginTop: '10px', borderRadius: '8px' }}
+                                  onClick={() => setTabIndex(tabLabelToIndex['Orders'])}
+                              >
+                                  View Orders
+                              </Button>
+                          )}
+                          {['SuperAdmin', 'InventoryManager'].includes(user.role) && (
+                              <Button
+                                  variant="contained"
+                                  color="warning"
+                                  fullWidth
+                                  sx={{ marginTop: '10px', borderRadius: '8px' }}
+                                  onClick={() => setTabIndex(tabLabelToIndex['Inventory'])}
+                              >
+                                  Check Inventory
+                              </Button>
+                          )}
                       </CardContent>
                   </Card>
               </Grid>
 
               {/* Recent Activities Card */}
-              <Grid item xs={12} sm={6} md={3}>
-                  <Card sx={actionCardStyles}>
-                      <CardContent>
-                          <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Recent Activities</Typography>
-                          <Divider sx={{ marginBottom: '10px' }} />
-                          <Box sx={{ maxHeight: '250px', overflowY: 'auto' }}>
-                              {activityLogs.length > 0 ? (
-                                  activityLogs.slice(-5).reverse().map((log, index) => (
-                                      <Typography key={index} variant="body2" sx={{ marginBottom: '10px' }}>
-                                          - {log.action} by {log.admin_name}
-                                      </Typography>
-                                  ))
-                              ) : (
-                                  <Typography variant="body2">No recent activities available.</Typography>
-                              )}
-                          </Box>
-                      </CardContent>
-                  </Card>
-              </Grid>
+              {user.role === 'SuperAdmin' && (
+                  <Grid item xs={12} sm={6} md={3}>
+                      <Card sx={actionCardStyles}>
+                          <CardContent>
+                              <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Recent Activities</Typography>
+                              <Divider sx={{ marginBottom: '10px' }} />
+                              <Box sx={{ maxHeight: '250px', overflowY: 'auto' }}>
+                                  {activityLogs.length > 0 ? (
+                                      activityLogs.slice(-5).reverse().map((log, index) => (
+                                          <Typography key={index} variant="body2" sx={{ marginBottom: '10px' }}>
+                                              - {log.action} by {log.admin_name}
+                                          </Typography>
+                                      ))
+                                  ) : (
+                                      <Typography variant="body2">No recent activities available.</Typography>
+                                  )}
+                              </Box>
+                          </CardContent>
+                      </Card>
+                  </Grid>
+              )}
 
               {/* Sales Overview Chart */}
-              <Grid item xs={12} sm={12} md={6}>
-                  <Card sx={actionCardStyles}>
-                      <CardContent>
-                          <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Users, Products & Orders Overview (Last 12 Months)</Typography>
-                          <Box sx={{ paddingTop: '20px', height: '300px' }}>
-                              <ResponsiveContainer width="100%" height="100%">
-                                  <LineChart data={chartData}>
-                                      <CartesianGrid strokeDasharray="3 3" />
-                                      <XAxis dataKey="name" />
-                                      <YAxis />
-                                      <ChartTooltip />
-                                      <Legend />
-                                      <Line type="monotone" dataKey="Users" stroke="#8884d8" name="Users" />
-                                      <Line type="monotone" dataKey="Products" stroke="#82ca9d" name="Products" />
-                                      <Line type="monotone" dataKey="Orders" stroke="#ffc658" name="Orders" />
-                                  </LineChart>
-                              </ResponsiveContainer>
-                          </Box>
-                      </CardContent>
-                  </Card>
-              </Grid>
+              {(user.role === 'SuperAdmin' || user.role === 'ProductManager' || user.role === 'OrderManager') && (
+                  <Grid item xs={12} sm={12} md={6}>
+                      <Card sx={actionCardStyles}>
+                          <CardContent>
+                              <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>Overview (Last 12 Months)</Typography>
+                              <Box sx={{ paddingTop: '20px', height: '300px' }}>
+                                  <ResponsiveContainer width="100%" height="100%">
+                                      <LineChart data={chartData}>
+                                          <CartesianGrid strokeDasharray="3 3" />
+                                          <XAxis dataKey="name" />
+                                          <YAxis />
+                                          <ChartTooltip />
+                                          <Legend />
+                                          {user.role === 'SuperAdmin' && (
+                                              <Line type="monotone" dataKey="Users" stroke="#8884d8" name="Users" />
+                                          )}
+                                          {['SuperAdmin', 'ProductManager'].includes(user.role) && (
+                                              <Line type="monotone" dataKey="Products" stroke="#82ca9d" name="Products" />
+                                          )}
+                                          {['SuperAdmin', 'OrderManager'].includes(user.role) && (
+                                              <Line type="monotone" dataKey="Orders" stroke="#ffc658" name="Orders" />
+                                          )}
+                                      </LineChart>
+                                  </ResponsiveContainer>
+                              </Box>
+                          </CardContent>
+                      </Card>
+                  </Grid>
+              )}
           </Grid>
 
           {/* Error Message */}
@@ -321,7 +382,7 @@ const DashboardHome = ({ setTabIndex }) => {
   );
 };
 
-// Separate card styles to enhance readability and reusability
+// Card styles remain the same
 const cardStyles = (bgColor) => ({
   display: 'flex',
   justifyContent: 'space-between',

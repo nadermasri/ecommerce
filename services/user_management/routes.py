@@ -1,5 +1,6 @@
 #authentic_lebanese_sentiment_shop/services/users/routes.py
 from flask import Blueprint, request, jsonify, abort, current_app
+from functools import wraps
 import smtplib
 from email.mime.text import MIMEText
 # import jwt
@@ -281,6 +282,7 @@ def delete_user(user_id):
         return jsonify({"message": "User deleted"})
     except Exception as e:
         db.session.rollback()
+        print(f"Exception in delete_user: {e}")
         return jsonify({"error": "Failed to process request."}), 500
 
 # Get all admins (SuperAdmin-only)
@@ -365,7 +367,12 @@ def get_activity_logs():
 @users_bp.route('/me', methods=['GET'])
 @jwt_required
 def get_current_user():
-    user = User.query.get_or_404(request.user_id)
+    if request.user_role:
+        # The user is an admin
+        user = AdminUser.query.get_or_404(request.user_id)
+    else:
+        # The user is a regular user
+        user = User.query.get_or_404(request.user_id)
     return jsonify(user.to_dict()), 200
 
 # In services/users/routes.py

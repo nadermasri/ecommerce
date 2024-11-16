@@ -64,18 +64,22 @@ export const setPromotion = async (productId, discountedPrice) => {
 };
 
 // Bulk upload products with secure file handling and error handling
+
 export const bulkUploadProducts = async (file) => {
     if (!(file instanceof File)) throw new Error("Invalid file input.");
     try {
         const formData = new FormData();
         formData.append('file', file);
 
-        // Do NOT set 'Content-Type' manually. Let Axios set it automatically.
-        const response = await api.post(`/products/bulk_upload`, formData);
+        const response = await api.post(`/products/bulk_upload`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     } catch (error) {
         console.error('Error bulk uploading products:', error);
-        // If the error response has data, throw that. Otherwise, throw a generic error.
         throw error.response?.data || new Error("Failed to bulk upload products.");
     }
 };
+

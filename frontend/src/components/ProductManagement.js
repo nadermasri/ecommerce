@@ -220,25 +220,27 @@ function ProductManagement() {
     };
 
     // Bulk upload products with file validation and error handling
+    console.log("Selected file:", file); // Add this line for debugging
+
+    // Call bulk upload API
     const handleBulkUpload = async (e) => {
         e.preventDefault();
+    
+        // Check if file is selected
         if (!file) {
             setError("Please select a CSV file first.");
             setAlertOpen(true);
             return;
         }
-
-        // Optional: Validate file type and size
+    
+        // Validate file type
         const allowedExtensions = /(\.csv)$/i;
         if (!allowedExtensions.exec(file.name)) {
             setError("Please upload a valid CSV file.");
             setAlertOpen(true);
             return;
         }
-
-        // Log the file to ensure it's being set
-        console.log("Uploading file:", file);
-
+    
         try {
             const response = await bulkUploadProducts(file);
             setSuccessMessage(response.message || "Bulk upload completed successfully.");
@@ -252,7 +254,7 @@ function ProductManagement() {
             setAlertOpen(true);
         }
     };
-
+    
     return (
         <Container>
             <Typography variant="h4" align="center" gutterBottom>Manage Products</Typography>
@@ -387,13 +389,14 @@ function ProductManagement() {
             <form onSubmit={handleBulkUpload}>
                 <Typography variant="h5" sx={{ marginTop: 4 }}>Bulk Upload Products</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginTop: 2 }}>
-                    <input
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => setFile(e.target.files[0])}
-                        style={{ display: 'none' }}
-                        id="bulk-upload-file"
-                    />
+                <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setFile(e.target.files[0])}
+                    style={{ display: 'none' }}
+                    id="bulk-upload-file"
+                />
+
                     <label htmlFor="bulk-upload-file">
                         <Button variant="outlined" component="span">Select CSV File</Button>
                     </label>

@@ -1,7 +1,6 @@
 // components/AdminDashboard.js
 
-// Import necessary modules and components from React and MUI libraries
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Button, IconButton, Menu, MenuItem, Avatar,
@@ -12,8 +11,9 @@ import {
   ListAlt, History, Menu as MenuIcon, AccountCircle
 } from '@mui/icons-material';
 
-// Import authentication service
+// Import authentication service and context
 import { logout } from '../services/authService';
+import { AuthContext } from '../context/AuthContext';
 
 // Import dashboard components
 import OrderManagement from './OrderManagement';
@@ -26,17 +26,34 @@ import CategoryManagement from './CategoryManagement';
 import SubcategoryManagement from './SubcategoryManagement';
 
 function AdminDashboard() {
-  // State to manage active tab
+  const { user } = useContext(AuthContext);
   const [tabIndex, setTabIndex] = useState(0);
-  // State to manage sidebar visibility
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  // State for anchor element in menu
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
 
-  // Removed useEffect that checks for token in localStorage
+  // Define tabs with roles and components
+  const tabs = [
+    { label: 'Home', icon: <Home />, roles: ['SuperAdmin', 'ProductManager', 'InventoryManager', 'OrderManager'], component: DashboardHome },
+    { label: 'Users', icon: <AccountCircle />, roles: ['SuperAdmin'], component: UserManagement },
+    { label: 'Orders', icon: <ShoppingCart />, roles: ['SuperAdmin', 'OrderManager'], component: OrderManagement },
+    { label: 'Products', icon: <Inventory />, roles: ['SuperAdmin', 'ProductManager'], component: ProductManagement },
+    { label: 'Inventory', icon: <ListAlt />, roles: ['SuperAdmin', 'InventoryManager'], component: InventoryManagement },
+    { label: 'Logs', icon: <History />, roles: ['SuperAdmin'], component: ActivityLog },
+    { label: 'Categories', icon: <ListAlt />, roles: ['SuperAdmin', 'ProductManager'], component: CategoryManagement },
+    { label: 'Subcategories', icon: <ListAlt />, roles: ['SuperAdmin', 'ProductManager'], component: SubcategoryManagement },
+  ];
 
-  // Handle tab changes securely
+  // Filter tabs based on user role
+  const visibleTabs = tabs.filter(tab => tab.roles.includes(user?.role));
+
+  // Map tab labels to their indices in visibleTabs
+  const tabLabelToIndex = {};
+  visibleTabs.forEach((tab, index) => {
+    tabLabelToIndex[tab.label] = index;
+  });
+
+  // Handle tab changes
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
   };
@@ -57,14 +74,14 @@ function AdminDashboard() {
   };
 
   // Secure logout handler
-  const handleLogout = () => {
-    logout(); // Clear auth token securely
+  const handleLogout = async () => {
+    await logout(); // Clear auth token securely
     navigate('/'); // Redirect to login page
   };
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar with conditional rendering */}
+      {/* Sidebar */}
       <Box sx={{
         width: sidebarOpen ? '250px' : '78px',
         backgroundColor: '#11101D',
@@ -120,15 +137,9 @@ function AdminDashboard() {
             },
           }}
         >
-          {/* Tabs with icons and labels */}
-          <Tab icon={<Home />} label={sidebarOpen ? "Home" : null} />
-          <Tab icon={<AccountCircle />} label={sidebarOpen ? "Users" : null} />
-          <Tab icon={<ShoppingCart />} label={sidebarOpen ? "Orders" : null} />
-          <Tab icon={<Inventory />} label={sidebarOpen ? "Products" : null} />
-          <Tab icon={<ListAlt />} label={sidebarOpen ? "Inventory" : null} />
-          <Tab icon={<History />} label={sidebarOpen ? "Logs" : null} />
-          <Tab icon={<ListAlt />} label={sidebarOpen ? "Categories" : null} />
-          <Tab icon={<ListAlt />} label={sidebarOpen ? "Subcategories" : null} />
+          {visibleTabs.map((tab, index) => (
+            <Tab key={index} icon={tab.icon} label={sidebarOpen ? tab.label : null} />
+          ))}
         </Tabs>
 
         {/* Profile and Logout section */}
@@ -145,20 +156,22 @@ function AdminDashboard() {
             opacity: sidebarOpen ? 1 : 0,
             transition: 'opacity 0.3s ease',
           }}>
-            <Avatar sx={{ width: 40, height: 40, bgcolor: '#1976d2' }} />
+            <Avatar sx={{ width: 40, height: 40, bgcolor: '#1976d2' }}>
+              {user?.username?.charAt(0).toUpperCase()}
+            </Avatar>
             {sidebarOpen && (
               <Box>
                 <Typography
                   variant="body1"
                   sx={{ color: '#fff', fontWeight: 600 }}
                 >
-                  Super Admin
+                  {user?.username}
                 </Typography>
                 <Typography
                   variant="body2"
                   sx={{ color: '#888' }}
                 >
-                  Web Developer
+                  {user?.role || 'User'}
                 </Typography>
               </Box>
             )}
@@ -203,11 +216,11 @@ function AdminDashboard() {
             variant="body1"
             sx={{ mr: 1, fontWeight: 500 }}
           >
-            Super Admin
+            {user?.username}
           </Typography>
           <IconButton onClick={handleMenuOpen}>
             <Avatar sx={{ bgcolor: '#1976d2' }}>
-              <AccountCircle />
+              {user?.username?.charAt(0).toUpperCase() || <AccountCircle />}
             </Avatar>
           </IconButton>
 
@@ -225,7 +238,6 @@ function AdminDashboard() {
               horizontal: 'right',
             }}
           >
-            {/* <MenuItem onClick={handleMenuClose}>Profile</MenuItem> */}
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
           </Menu>
         </Box>
@@ -237,24 +249,14 @@ function AdminDashboard() {
           borderRadius: '12px',
           boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
         }}>
-          {/* Render components securely based on active tab */}
-          {tabIndex === 0 && (
-            <DashboardHome setTabIndex={setTabIndex} />
-          )}
-          {tabIndex === 1 && <UserManagement />}
-          {tabIndex === 2 && <OrderManagement />}
-          {tabIndex === 3 && <ProductManagement />}
-          {tabIndex === 4 && <InventoryManagement />}
-          {tabIndex === 5 && <ActivityLog />}
-          {tabIndex === 6 && <CategoryManagement />}
-          {tabIndex === 7 && <SubcategoryManagement />}
+          {visibleTabs[tabIndex] && React.createElement(visibleTabs[tabIndex].component, { setTabIndex, tabLabelToIndex })}
         </Box>
       </Box>
     </Box>
   );
 }
 
-// Separate card styles to enhance readability and reusability
+// No changes needed for card styles
 const cardStyles = (bgColor) => ({
   display: 'flex',
   justifyContent: 'space-between',
