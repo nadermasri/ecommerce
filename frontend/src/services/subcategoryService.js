@@ -26,12 +26,24 @@ export const createSubcategory = async (subcategoryData) => {
 
 // Delete a subcategory with input validation and secure headers
 export const deleteSubcategory = async (subcategoryId) => {
-    if (typeof subcategoryId !== 'string') throw new Error("Invalid subcategoryId.");
+    if (typeof subcategoryId !== 'number') throw new Error("Invalid subcategoryId.");
     try {
         const response = await api.delete(`/products/subcategories/${encodeURIComponent(subcategoryId)}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting subcategory:", error);
         throw error.response?.data || new Error("Failed to delete subcategory.");
+    }
+};
+
+// Update Subcategory Function
+export const updateSubcategory = async (subcategoryId, updatedData) => {
+    if (typeof subcategoryId !== 'number' || typeof updatedData !== 'object') throw new Error("Invalid input.");
+    try {
+        const response = await api.put(`/products/subcategories/${encodeURIComponent(subcategoryId)}`, updatedData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating subcategory:", error);
+        throw error.response?.data || new Error("Failed to update subcategory.");
     }
 };

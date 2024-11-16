@@ -14,7 +14,7 @@ export const fetchUsers = async () => {
 
 // Delete user with input validation and error handling
 export const deleteUser = async (userId) => {
-    if (typeof userId !== 'string') throw new Error("Invalid userId.");
+    if (typeof userId !== 'number') throw new Error("Invalid userId.");
     try {
         const response = await api.delete(`/user/${encodeURIComponent(userId)}`);
         return response.data;
@@ -26,7 +26,7 @@ export const deleteUser = async (userId) => {
 
 // Update user profile with input validation and error handling
 export const updateUserProfile = async (userId, updatedData) => {
-    if (typeof userId !== 'string' || typeof updatedData !== 'object') throw new Error("Invalid input.");
+    if (typeof userId !== 'number' || typeof updatedData !== 'object') throw new Error("Invalid input.");
     try {
         const response = await api.put(`/user/users/${encodeURIComponent(userId)}/profile`, updatedData);
         return response.data;
@@ -38,7 +38,7 @@ export const updateUserProfile = async (userId, updatedData) => {
 
 // Fetch user profile with secure handling
 export const fetchUserProfile = async (userId) => {
-    if (typeof userId !== 'string') throw new Error("Invalid userId.");
+    if (typeof userId !== 'number') throw new Error("Invalid userId.");
     try {
         const response = await api.get(`/user/users/${encodeURIComponent(userId)}/profile`);
         return response.data;
@@ -86,7 +86,7 @@ export const fetchAdminUsers = async () => {
 
 // Update admin user with input validation and error handling
 export const updateAdminUser = async (userId, updatedData) => {
-    if (typeof userId !== 'string' || typeof updatedData !== 'object') throw new Error("Invalid input.");
+    if (typeof userId !== 'number' || typeof updatedData !== 'object') throw new Error("Invalid input.");
     try {
         const response = await api.put(`/user/admins/${encodeURIComponent(userId)}`, updatedData);
         return response.data;
@@ -98,7 +98,7 @@ export const updateAdminUser = async (userId, updatedData) => {
 
 // Delete admin user with input validation and error handling
 export const deleteAdminUser = async (userId) => {
-    if (typeof userId !== 'string') throw new Error("Invalid userId.");
+    if (typeof userId !== 'number') throw new Error("Invalid userId.");
     try {
         const response = await api.delete(`/user/admins/${encodeURIComponent(userId)}`);
         return response.data;

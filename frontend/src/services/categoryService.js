@@ -26,12 +26,24 @@ export const createCategory = async (categoryData) => {
 
 // Delete a category with input validation and secure headers
 export const deleteCategory = async (categoryId) => {
-    if (typeof categoryId !== 'string') throw new Error("Invalid categoryId.");
+    if (typeof categoryId !== 'number') throw new Error("Invalid categoryId.");
     try {
         const response = await api.delete(`/products/categories/${encodeURIComponent(categoryId)}`);
         return response.data;
     } catch (error) {
         console.error("Error deleting category:", error);
         throw error.response?.data || new Error("Failed to delete category.");
+    }
+};
+
+// Update Category Function
+export const updateCategory = async (categoryId, updatedData) => {
+    if (typeof categoryId !== 'number' || typeof updatedData !== 'object') throw new Error("Invalid input.");
+    try {
+        const response = await api.put(`/products/categories/${encodeURIComponent(categoryId)}`, updatedData);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating category:", error);
+        throw error.response?.data || new Error("Failed to update category.");
     }
 };

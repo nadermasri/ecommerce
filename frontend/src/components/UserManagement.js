@@ -24,7 +24,9 @@ import {
     Select,
     MenuItem,
     Alert,
-    IconButton
+    IconButton,
+    FormControl,
+    InputLabel
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 
@@ -36,7 +38,8 @@ function UserManagement() {
     // State variables for editing users and admins
     const [editingUser, setEditingUser] = useState(null);
     const [editingAdmin, setEditingAdmin] = useState(null);
-    
+    const membershipTiers = ['Normal', 'Premium', 'Gold'];
+
     // State variables for form data
     const [formData, setFormData] = useState({
         username: '',
@@ -200,6 +203,12 @@ function UserManagement() {
                 return;
             }
 
+            // Ensure membership tier is valid
+            if (formData.membership_tier && !membershipTiers.includes(formData.membership_tier)) {
+                setError("Invalid membership tier.");
+                return;
+            }
+
             try {
                 await updateUserProfile(editingUser.id, formData);
                 setSuccess("User updated successfully!");
@@ -208,7 +217,8 @@ function UserManagement() {
                 setEditingUser(null);
             } catch (error) {
                 console.error("Failed to update user:", error);
-                setError(error.response?.data?.error || "Failed to update user.");
+                const errorMsg = error.response?.data?.error || "Failed to update user.";
+                setError(errorMsg);
             }
         }
     };
@@ -362,14 +372,19 @@ function UserManagement() {
                             fullWidth
                             margin="normal"
                         />
-                        <TextField
-                            label="Membership Tier"
-                            name="membership_tier"
-                            value={formData.membership_tier}
-                            onChange={handleInputChange}
-                            fullWidth
-                            margin="normal"
-                        />
+                        <FormControl fullWidth margin="normal" required>
+                            <InputLabel>Membership Tier</InputLabel>
+                            <Select
+                                name="membership_tier"
+                                value={formData.membership_tier}
+                                onChange={handleInputChange}
+                                label="Membership Tier"
+                            >
+                                {membershipTiers.map(tier => (
+                                    <MenuItem key={tier} value={tier}>{tier}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                         <Box display="flex" gap={2} marginTop={2}>
                             <Button variant="contained" color="primary" type="submit" fullWidth>
                                 Save Changes
@@ -461,20 +476,20 @@ function UserManagement() {
                             error={adminFormData.email && !validateEmail(adminFormData.email)}
                             helperText={adminFormData.email && !validateEmail(adminFormData.email) ? "Invalid email format." : ""}
                         />
-                        <Select
-                            label="Role"
-                            name="role"
-                            value={adminFormData.role}
-                            onChange={handleAdminInputChange}
-                            fullWidth
-                            margin="normal"
-                            required
-                        >
-                            <MenuItem value="InventoryManager">Inventory Manager</MenuItem>
-                            <MenuItem value="OrderManager">Order Manager</MenuItem>
-                            <MenuItem value="ProductManager">Product Manager</MenuItem>
-                            <MenuItem value="SuperAdmin">Super Admin</MenuItem>
-                        </Select>
+                        <FormControl fullWidth margin="normal" required>
+                            <InputLabel>Role</InputLabel>
+                            <Select
+                                name="role"
+                                value={adminFormData.role}
+                                onChange={handleAdminInputChange}
+                                label="Role"
+                            >
+                                <MenuItem value="InventoryManager">Inventory Manager</MenuItem>
+                                <MenuItem value="OrderManager">Order Manager</MenuItem>
+                                <MenuItem value="ProductManager">Product Manager</MenuItem>
+                                <MenuItem value="SuperAdmin">Super Admin</MenuItem>
+                            </Select>
+                        </FormControl>
                         <TextField
                             label="Password"
                             name="password"
@@ -537,20 +552,20 @@ function UserManagement() {
                         error={newAdminData.password && !validatePassword(newAdminData.password)}
                         helperText={newAdminData.password && !validatePassword(newAdminData.password) ? "Password must be at least 8 characters." : ""}
                     />
-                    <Select
-                        label="Role"
-                        name="role"
-                        value={newAdminData.role}
-                        onChange={handleNewAdminInputChange}
-                        fullWidth
-                        margin="normal"
-                        required
-                    >
-                        <MenuItem value="InventoryManager">Inventory Manager</MenuItem>
-                        <MenuItem value="OrderManager">Order Manager</MenuItem>
-                        <MenuItem value="ProductManager">Product Manager</MenuItem>
-                        <MenuItem value="SuperAdmin">Super Admin</MenuItem>
-                    </Select>
+                    <FormControl fullWidth margin="normal" required>
+                        <InputLabel>Role</InputLabel>
+                        <Select
+                            name="role"
+                            value={newAdminData.role}
+                            onChange={handleNewAdminInputChange}
+                            label="Role"
+                        >
+                            <MenuItem value="InventoryManager">Inventory Manager</MenuItem>
+                            <MenuItem value="OrderManager">Order Manager</MenuItem>
+                            <MenuItem value="ProductManager">Product Manager</MenuItem>
+                            <MenuItem value="SuperAdmin">Super Admin</MenuItem>
+                        </Select>
+                    </FormControl>
                     <Button 
                         variant="contained" 
                         color="primary" 

@@ -1,7 +1,7 @@
 // src/components/SubcategoryManagement.js
 
 import React, { useState, useEffect } from 'react';
-import { fetchSubcategories, createSubcategory, deleteSubcategory } from '../services/subcategoryService';
+import { fetchSubcategories, createSubcategory, deleteSubcategory, updateSubcategory } from '../services/subcategoryService';
 import { fetchCategories } from '../services/categoryService';
 import {
     TextField,
@@ -19,7 +19,11 @@ import {
     TableBody,
     IconButton,
     Snackbar,
-    Alert
+    Alert,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions
 } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 
@@ -31,27 +35,31 @@ function SubcategoryManagement() {
     const [alertOpen, setAlertOpen] = useState(false);  // State to control alert visibility
     const [alertMessage, setAlertMessage] = useState(''); // Message for Snackbar
     const [alertSeverity, setAlertSeverity] = useState('info'); // Severity for Snackbar feedback (success, error)
+    const [isEditing, setIsEditing] = useState(false); // State to control edit dialog
+    const [currentSubcategory, setCurrentSubcategory] = useState(null); // Subcategory being edited
 
-    // Fetch categories and subcategories
+    // Function to fetch subcategories and categories
+    const fetchData = async () => {
+        try {
+            const [subcategoriesData, categoriesData] = await Promise.all([
+                fetchSubcategories(),
+                fetchCategories(),
+            ]);
+            setSubcategories(subcategoriesData);
+            setCategories(categoriesData);
+            setAlertMessage('Data loaded successfully.');
+            setAlertSeverity('success');
+            setAlertOpen(true);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setAlertMessage('Error fetching data.');
+            setAlertSeverity('error');
+            setAlertOpen(true);
+        }
+    };
+
+    // Fetch subcategories and categories when the component is first rendered
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [subcategoriesData, categoriesData] = await Promise.all([
-                    fetchSubcategories(),
-                    fetchCategories(),
-                ]);
-                setSubcategories(subcategoriesData);
-                setCategories(categoriesData);
-                setAlertMessage('Data loaded successfully.');
-                setAlertSeverity('success');
-                setAlertOpen(true);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                setAlertMessage('Error fetching data.');
-                setAlertSeverity('error');
-                setAlertOpen(true);
-            }
-        };
         fetchData();
     }, []);
 
@@ -79,7 +87,8 @@ function SubcategoryManagement() {
             setAlertOpen(true);
         } catch (error) {
             console.error("Error creating subcategory:", error);
-            setAlertMessage('Error creating subcategory.');
+            const errorMsg = error.response?.data?.error || 'Error creating subcategory.';
+            setAlertMessage(errorMsg);
             setAlertSeverity('error');
             setAlertOpen(true);
         }
@@ -90,16 +99,59 @@ function SubcategoryManagement() {
         if (!window.confirm("Are you sure you want to delete this subcategory?")) return; // Confirmation before deletion
         try {
             await deleteSubcategory(subcategoryId);
-            setSubcategories(subcategories.filter(subcategory => subcategory.id !== subcategoryId));
-            setAlertMessage('Subcategory deleted successfully!');
+            setAlertMessage('Subcategory deleted successfully.');
             setAlertSeverity('success');
             setAlertOpen(true);
+            await fetchData(); // Refresh the subcategories and categories list
         } catch (error) {
             console.error("Error deleting subcategory:", error);
-            setAlertMessage('Error deleting subcategory.');
+            const errorMsg = error.response?.data?.error || "Error deleting subcategory.";
+            setAlertMessage(errorMsg);
             setAlertSeverity('error');
             setAlertOpen(true);
         }
+    };
+
+    // Handler for initiating edit
+    const handleEditSubcategory = (subcategory) => {
+        setCurrentSubcategory(subcategory);
+        setIsEditing(true);
+    };
+
+    // Handler for saving edited subcategory
+    const handleSaveEdit = async () => {
+        if (!currentSubcategory.name.trim() || !currentSubcategory.category_id) {
+            setAlertMessage("Please provide all required fields.");
+            setAlertSeverity("error");
+            setAlertOpen(true);
+            return;
+        }
+
+        try {
+            const updatedData = {
+                name: currentSubcategory.name.trim(),
+                category_id: currentSubcategory.category_id,
+            };
+            const updatedSubcategory = await updateSubcategory(currentSubcategory.id, updatedData);
+            setSubcategories(subcategories.map(sub => sub.id === updatedSubcategory.id ? updatedSubcategory : sub));
+            setAlertMessage('Subcategory updated successfully!');
+            setAlertSeverity('success');
+            setAlertOpen(true);
+            setIsEditing(false);
+            setCurrentSubcategory(null);
+        } catch (error) {
+            console.error("Error updating subcategory:", error);
+            const errorMsg = error.response?.data?.error || 'Error updating subcategory.';
+            setAlertMessage(errorMsg);
+            setAlertSeverity('error');
+            setAlertOpen(true);
+        }
+    };
+
+    // Handler for closing edit dialog
+    const handleCloseEdit = () => {
+        setIsEditing(false);
+        setCurrentSubcategory(null);
     };
 
     // Close Snackbar alert after display
@@ -109,7 +161,8 @@ function SubcategoryManagement() {
     };
 
     return (
-        <Container maxWidth="sm">
+        <Container maxWidth="md">
+            {/* Form for adding a new subcategory */}
             <Typography variant="h5" gutterBottom>Create New Subcategory</Typography>
             <form onSubmit={handleAddSubcategory}>
                 <TextField
@@ -125,7 +178,7 @@ function SubcategoryManagement() {
                     <Select
                         value={categoryId}
                         onChange={(e) => setCategoryId(e.target.value)}
-                        required
+                        label="Category"
                     >
                         {categories.map((category) => (
                             <MenuItem key={category.id} value={category.id}>
@@ -169,11 +222,11 @@ function SubcategoryManagement() {
                             <TableCell>{subcategory.name}</TableCell>
                             <TableCell>{subcategory.category ? subcategory.category.name : 'No Category'}</TableCell>
                             <TableCell>
-                                {/* Edit button placeholder for future implementation */}
-                                <IconButton color="primary" onClick={() => alert('Edit Subcategory (Not Implemented)')}>
+                                {/* Edit Button */}
+                                <IconButton color="primary" onClick={() => handleEditSubcategory(subcategory)}>
                                     <Edit />
                                 </IconButton>
-                                {/* Delete button with confirmation */}
+                                {/* Delete Button */}
                                 <IconButton color="secondary" onClick={() => handleDeleteSubcategory(subcategory.id)}>
                                     <Delete />
                                 </IconButton>
@@ -182,8 +235,46 @@ function SubcategoryManagement() {
                     ))}
                 </TableBody>
             </Table>
+
+            {/* Edit Subcategory Dialog */}
+            <Dialog open={isEditing} onClose={handleCloseEdit}>
+                <DialogTitle>Edit Subcategory</DialogTitle>
+                <DialogContent>
+                    {currentSubcategory && (
+                        <>
+                            <TextField
+                                label="Subcategory Name"
+                                fullWidth
+                                value={currentSubcategory.name}
+                                onChange={(e) => setCurrentSubcategory({ ...currentSubcategory, name: e.target.value })}
+                                margin="normal"
+                                required
+                            />
+                            <FormControl fullWidth margin="normal" required>
+                                <InputLabel>Category</InputLabel>
+                                <Select
+                                    value={currentSubcategory.category_id}
+                                    onChange={(e) => setCurrentSubcategory({ ...currentSubcategory, category_id: e.target.value })}
+                                    label="Category"
+                                >
+                                    {categories.map((category) => (
+                                        <MenuItem key={category.id} value={category.id}>
+                                            {category.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseEdit} color="secondary">Cancel</Button>
+                    <Button onClick={handleSaveEdit} color="primary">Save</Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
+
 }
 
 export default SubcategoryManagement;

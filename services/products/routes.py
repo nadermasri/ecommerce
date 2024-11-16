@@ -96,19 +96,39 @@ def update_category(category_id):
         return jsonify({"error": "Failed to update category"}), 500
 
 
-# Delete category
+# Delete category with restriction on existing subcategories or products
 @products_bp.route('/categories/<int:category_id>', methods=['DELETE'])
 @jwt_required
 @role_required(['SuperAdmin', 'ProductManager'])
 def delete_category(category_id):
     category = Category.query.get_or_404(category_id)
+    
+    # Check for associated subcategories
+    if category.subcategories:
+        return jsonify({"error": "Cannot delete category with existing subcategories. Please delete associated subcategories first."}), 400
+    
+    # Check for associated products
+    if category.products:
+        return jsonify({"error": "Cannot delete category with existing products. Please delete associated products first."}), 400
+    
     try:
         db.session.delete(category)
         db.session.commit()
-        return jsonify({"message": "Category deleted successfully"})
+        
+        # Log deletion for audit
+        activity_log = ActivityLog(admin_id=request.user_id, action=f"Category {category_id} deleted by admin {request.user_id}")
+        db.session.add(activity_log)
+        db.session.commit()
+        
+        return jsonify({"message": "Category deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Failed to delete category"}), 500
+        # Log the exception for debugging
+        import logging
+        logging.error(f"Failed to delete category {category_id}: {str(e)}")
+        return jsonify({"error": "Failed to delete category due to server error."}), 500
+
+
 
 
 # Create category route
