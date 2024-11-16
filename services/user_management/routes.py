@@ -133,20 +133,19 @@ def login():
             'jwt_token',
             jwt_token,
             httponly=True,
-            samesite='Lax',  # Changed from 'None' to 'Lax' for development
-            secure=False,     # Set to True in production
+            samesite='Lax',
+            secure=False,  # Set to True in production over HTTPS
             path='/'
-            # Removed 'domain' parameter
         )
         response.set_cookie(
             'csrf_token',
             csrf_token,
             httponly=False,
-            samesite='Lax',  # Changed from 'None' to 'Lax' for development
-            secure=False,     # Set to True in production
+            samesite='Lax',
+            secure=False,  # Set to True in production over HTTPS
             path='/'
-            # Removed 'domain' parameter
         )
+
 
         print("JWT token being set:", jwt_token)
         print("CSRF token being set:", csrf_token)

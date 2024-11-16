@@ -10,12 +10,13 @@ const getCsrfTokenFromCookie = () => {
 
 // Create a centralized Axios instance
 const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000',
-    withCredentials: true, // Include cookies in requests
+    baseURL: 'http://localhost:5000',
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
 
 // Axios request interceptor to include CSRF token
 api.interceptors.request.use(
