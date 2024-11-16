@@ -26,7 +26,7 @@ export const createOrder = async (orderData) => {
 
 // Update order information with input validation and error handling
 export const updateOrderInfo = async (orderId, updateData) => {
-    if (typeof orderId !== 'string' || typeof updateData !== 'object') throw new Error("Invalid input.");
+    if (typeof orderId !== 'number' || typeof updateData !== 'object') throw new Error("Invalid input.");
     try {
         const response = await api.put(`/orders/${encodeURIComponent(orderId)}/update_info`, updateData);
         return response.data;
@@ -38,7 +38,7 @@ export const updateOrderInfo = async (orderId, updateData) => {
 
 // Delete an order with input validation and error handling
 export const deleteOrder = async (orderId) => {
-    if (typeof orderId !== 'string') throw new Error("Invalid orderId.");
+    if (typeof orderId !== 'number') throw new Error("Invalid orderId.");
     try {
         const response = await api.delete(`/orders/${encodeURIComponent(orderId)}`);
         return response.data;
@@ -50,7 +50,7 @@ export const deleteOrder = async (orderId) => {
 
 // Track an order with input validation and error handling
 export const trackOrder = async (orderId) => {
-    if (typeof orderId !== 'string') throw new Error("Invalid orderId.");
+    if (typeof orderId !== 'number') throw new Error("Invalid orderId.");
     try {
         const response = await api.get(`/orders/track/${encodeURIComponent(orderId)}`);
         return response.data;
@@ -62,7 +62,7 @@ export const trackOrder = async (orderId) => {
 
 // Return an item with input validation and error handling
 export const returnItem = async (orderId, orderItemId, reason) => {
-    if (typeof orderId !== 'string' || typeof orderItemId !== 'string' || typeof reason !== 'string') {
+    if (typeof orderId !== 'number' || typeof orderItemId !== 'number' || typeof reason !== 'string') {
         throw new Error("Invalid input data.");
     }
     try {
@@ -90,7 +90,7 @@ export const fetchReturns = async () => {
 
 // Update return status with input validation and secure headers
 export const updateReturnStatus = async (returnId, status) => {
-    if (typeof returnId !== 'string' || typeof status !== 'string') throw new Error("Invalid input.");
+    if (typeof returnId !== 'number' || typeof status !== 'string') throw new Error("Invalid input.");
     try {
         const response = await api.put(
             `/orders/returns/${encodeURIComponent(returnId)}`,
@@ -102,7 +102,6 @@ export const updateReturnStatus = async (returnId, status) => {
         throw error.response?.data || new Error("Failed to update return status.");
     }
 };
-
 
 // Fetch all products with secure headers and error handling
 export const fetchProducts = async () => {

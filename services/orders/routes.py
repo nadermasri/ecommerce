@@ -7,7 +7,9 @@ from ..user_management.models import ActivityLog
 from .decorators import role_required, jwt_required
 from datetime import datetime
 from ..products.models import Product
+import logging
 
+logging.basicConfig(level=logging.ERROR)
 
 orders_bp = Blueprint('orders', __name__)
 
@@ -196,6 +198,7 @@ def track_order(order_id):
 
 
 
+# orders/routes.py
 @orders_bp.route('/<int:order_id>/return_item', methods=['POST'])
 @jwt_required
 @role_required(['SuperAdmin', 'OrderManager'])
@@ -227,6 +230,8 @@ def return_item(order_id):
 
         # Restore stock for the returned item
         product = order_item.product
+        if not product:
+            return jsonify({"error": "Associated product not found"}), 404
         product.stock += order_item.quantity
 
         # Update the order's total price
@@ -250,9 +255,18 @@ def return_item(order_id):
             "return": new_return.to_dict()
         }), 201
 
+    except ValueError as ve:
+        db.session.rollback()
+        logging.error(f"ValueError: {str(ve)}")
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Failed to return item."}), 400
+        logging.error(f"Unexpected error: {str(e)}")
+        # Temporarily include the exception message for debugging
+        return jsonify({"error": f"Failed to return item due to server error: {str(e)}"}), 400
+
+
+
 
 @orders_bp.route('/returns', methods=['GET'])
 @jwt_required

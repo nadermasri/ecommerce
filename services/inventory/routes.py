@@ -112,9 +112,8 @@ def update_stock():
         # Update the Product's stock level
             product = Product.query.get(product_id)
             if product:
-                # Aggregate the total stock level across all inventory locations for this product
-                total_stock_level = db.session.query(db.func.sum(Inventory.stock_level)).filter_by(product_id=product_id).scalar()
-                product.stock = total_stock_level
+                # Update the product's stock level to the new stock level
+                product.stock = new_stock_level
 
         db.session.commit()
 

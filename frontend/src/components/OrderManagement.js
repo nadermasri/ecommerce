@@ -10,7 +10,7 @@ import {
     returnItem,
     fetchReturns,
     updateReturnStatus,
-    fetchProducts // Import fetchProducts
+    fetchProducts
 } from '../services/orderService';
 import {
     Container,
@@ -34,7 +34,8 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-    Alert
+    Alert,
+    Tooltip
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
@@ -77,13 +78,13 @@ function OrderManagement() {
                 const [ordersData, returnsData, productsData] = await Promise.all([
                     fetchOrders(),
                     fetchReturns(),
-                    fetchProducts() // Fetch products
+                    fetchProducts()
                 ]);
 
                 // Process orders to ensure total_price is a number
                 const processedOrders = ordersData.map(order => ({
                     ...order,
-                    total_price: Number(order.total_price) || 0,  // Convert to number, default to 0 if NaN
+                    total_price: Number(order.total_price) || 0,
                 }));
                 setOrders(processedOrders);
 
@@ -92,7 +93,7 @@ function OrderManagement() {
                 // Process products to ensure stock is a number
                 const processedProducts = productsData.map(product => ({
                     ...product,
-                    stock: Number(product.stock) || 0,  // Convert to number, default to 0 if NaN
+                    stock: Number(product.stock) || 0,
                 }));
                 setProducts(processedProducts);
             } catch (error) {
@@ -135,14 +136,15 @@ function OrderManagement() {
         const newItems = [...newOrder.items];
 
         if (name === 'product_id') {
-            // Update product_id
-            newItems[index][name] = value;
-
+            // Update product_id as number
+            const parsedProductId = parseInt(value, 10);
+            newItems[index][name] = !isNaN(parsedProductId) ? parsedProductId : '';
             // Reset quantity when product changes
             newItems[index]['quantity'] = '';
         } else if (name === 'quantity') {
             // Ensure quantity is a valid positive integer
-            newItems[index][name] = Math.max(1, parseInt(value, 10) || 1);
+            const parsedQuantity = parseInt(value, 10);
+            newItems[index][name] = !isNaN(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
         } else {
             newItems[index][name] = value;
         }
@@ -193,7 +195,7 @@ function OrderManagement() {
             // Prepare sanitized items
             const sanitizedItems = newOrder.items.map(item => ({
                 ...item,
-                product_id: item.product_id,
+                product_id: item.product_id, // Already a number
                 quantity: parseInt(item.quantity, 10),
             }));
 
@@ -202,8 +204,8 @@ function OrderManagement() {
                 items: sanitizedItems
             };
 
-            await createOrder(sanitizedOrder);  // No token passed
-            const data = await fetchOrders();  // Fetch updated orders
+            await createOrder(sanitizedOrder);  // API call
+            const data = await fetchOrders();    // Refresh orders
             const processedOrders = data.map(order => ({
                 ...order,
                 total_price: Number(order.total_price) || 0,
@@ -218,7 +220,7 @@ function OrderManagement() {
             });
         } catch (error) {
             console.error("Error creating order:", error);
-            setError('Failed to create the order. Please try again.');
+            setError(error.response?.data?.error || 'Failed to create the order. Please try again.');
         }
     };
 
@@ -254,7 +256,7 @@ function OrderManagement() {
             }
 
             try {
-                await updateOrderInfo(editingOrder.id, formData);  // No token passed
+                await updateOrderInfo(editingOrder.id, formData);  // API call
                 const data = await fetchOrders();  // Fetch updated orders
                 const processedOrders = data.map(order => ({
                     ...order,
@@ -269,7 +271,7 @@ function OrderManagement() {
                 });
             } catch (error) {
                 console.error("Error updating order info:", error);
-                setError('Failed to update the order. Please try again.');
+                setError(error.response?.data?.error || 'Failed to update the order. Please try again.');
             }
         }
     };
@@ -290,7 +292,7 @@ function OrderManagement() {
         setError(null);
         setSuccess(null);
         try {
-            await deleteOrder(orderId);  // No token passed
+            await deleteOrder(orderId);  // API call
             const data = await fetchOrders();  // Fetch updated orders
             const processedOrders = data.map(order => ({
                 ...order,
@@ -300,7 +302,7 @@ function OrderManagement() {
             setSuccess('Order deleted successfully!');
         } catch (error) {
             console.error("Error deleting order:", error);
-            setError('Failed to delete the order. Please try again.');
+            setError(error.response?.data?.error || 'Failed to delete the order. Please try again.');
         }
     };
 
@@ -309,11 +311,24 @@ function OrderManagement() {
         setError(null);
         setSuccess(null);
         try {
-            const trackedData = await trackOrder(orderId);  // No token passed
-            setTrackedOrder(trackedData.order);  // Update the state with the latest order data
+            const trackedData = await trackOrder(orderId);  // API call
+            // Ensure total_price and item.price are numbers
+            const processedTrackedOrder = {
+                ...trackedData.order,
+                total_price: typeof trackedData.order.total_price === 'number'
+                    ? trackedData.order.total_price
+                    : parseFloat(trackedData.order.total_price) || 0,
+                items: trackedData.order.items.map(item => ({
+                    ...item,
+                    price: typeof item.price === 'number'
+                        ? item.price
+                        : parseFloat(item.price) || 0,
+                })),
+            };
+            setTrackedOrder(processedTrackedOrder);  // Update state with processed data
         } catch (error) {
             console.error("Error tracking order:", error);
-            setError('Failed to track the order. Please try again.');
+            setError(error.response?.data?.error || 'Failed to track the order. Please try again.');
         }
     };
 
@@ -350,33 +365,45 @@ function OrderManagement() {
             setReturnData({ ...returnData, [name]: value });
         }
     };
+    
 
     // Handle submitting a return request
     const handleReturnSubmit = async () => {
         setError(null);
         setSuccess(null);
         const { order_item_id, reason } = returnData;
-
-        if (!order_item_id || !reason) {
+    
+        if (!order_item_id || !reason.trim()) {
             setError('Please provide both Order Item ID and Reason for return.');
             return;
         }
-
+    
         try {
-            const response = await returnItem(selectedOrder.id, order_item_id, reason);  // No token passed
+            const parsedOrderItemId = parseInt(order_item_id, 10);
+            if (isNaN(parsedOrderItemId)) {
+                setError('Invalid Order Item ID.');
+                return;
+            }
+    
+            const response = await returnItem(selectedOrder.id, parsedOrderItemId, reason.trim());  // API call
             setSuccess(response.message || 'Return request submitted successfully!');
             await fetchAllReturns();  // Fetch updated returns
             handleReturnDialogClose();
         } catch (error) {
             console.error("Failed to process return request:", error);
+            // Log the entire error object for debugging
+            console.log("Error details:", error);
             setError(error.response?.data?.error || 'Failed to submit return request.');
         }
     };
+    
+
+
 
     // Fetch all returns (used after creating a return)
     const fetchAllReturns = async () => {
         try {
-            const returnsData = await fetchReturns();  // No token passed
+            const returnsData = await fetchReturns();  // API call
             setReturns(returnsData);
         } catch (error) {
             console.error("Error fetching returns:", error);
@@ -392,7 +419,7 @@ function OrderManagement() {
         }
 
         try {
-            const updatedReturn = await updateReturnStatus(selectedReturn.id, newStatus);  // No token passed
+            const updatedReturn = await updateReturnStatus(selectedReturn.id, newStatus);  // API call
             setReturns(returns.map(returnItem =>
                 returnItem.id === updatedReturn.id ? updatedReturn : returnItem
             ));
@@ -402,7 +429,7 @@ function OrderManagement() {
             setNewStatus('');
         } catch (error) {
             console.error("Failed to update return status:", error);
-            setError('Failed to update return status.');
+            setError(error.response?.data?.error || 'Failed to update return status.');
         }
     };
 
@@ -468,9 +495,18 @@ function OrderManagement() {
                                     <Button variant="contained" color="info" onClick={() => handleTrackOrder(order.id)}>
                                         Track
                                     </Button>
-                                    <Button variant="contained" color="warning" onClick={() => handleReturnDialogOpen(order)}>
-                                        Return Item
-                                    </Button>
+                                    <Tooltip title="Returns are only allowed for delivered orders">
+                                    <span>
+                                        <Button
+                                            variant="contained"
+                                            color="warning"
+                                            onClick={() => handleReturnDialogOpen(order)}
+                                            disabled={order.status.toLowerCase() !== 'delivered'}
+                                        >
+                                            Return Item
+                                        </Button>
+                                    </span>
+                                </Tooltip>
                                 </Box>
                             </TableCell>
                         </TableRow>
@@ -749,7 +785,7 @@ function OrderManagement() {
                             <strong>User ID:</strong> {trackedOrder.user_id}<br />
                             <strong>Status:</strong> {trackedOrder.status}<br />
                             <strong>Delivery Option:</strong> {trackedOrder.delivery_option}<br />
-                            <strong>Total Price:</strong> ${trackedOrder.total_price.toFixed(2)}<br />
+                            <strong>Total Price:</strong> ${typeof trackedOrder.total_price === 'number' ? trackedOrder.total_price.toFixed(2) : '0.00'}<br />
                             <strong>Order Date:</strong> {new Date(trackedOrder.order_date).toLocaleString()}<br />
                         </Typography>
                         <Typography variant="h6" gutterBottom sx={{ marginTop: 2 }}>Order Items:</Typography>
@@ -758,7 +794,7 @@ function OrderManagement() {
                                 <Typography variant="body2">
                                     <strong>Product ID:</strong> {item.product_id}<br />
                                     <strong>Quantity:</strong> {item.quantity}<br />
-                                    <strong>Price:</strong> ${item.price.toFixed(2)}
+                                    <strong>Price:</strong> ${typeof item.price === 'number' ? item.price.toFixed(2) : '0.00'}
                                 </Typography>
                             </Box>
                         ))}
@@ -770,6 +806,6 @@ function OrderManagement() {
             )}
         </Container>
     );
-    }
+}
 
     export default OrderManagement;

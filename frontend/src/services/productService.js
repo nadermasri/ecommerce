@@ -24,9 +24,9 @@ export const addProduct = async (productData) => {
     }
 };
 
-// Update a product with input validation and secure headers
+// Update a product with input validation and error handling
 export const updateProduct = async (productId, productData) => {
-    if (typeof productId !== 'string' || typeof productData !== 'object') throw new Error("Invalid input.");
+    if (typeof productId !== 'number' || typeof productData !== 'object') throw new Error("Invalid input.");
     try {
         const response = await api.put(`/products/${encodeURIComponent(productId)}`, productData);
         return response.data;
@@ -36,9 +36,9 @@ export const updateProduct = async (productId, productData) => {
     }
 };
 
-// Delete a product with input validation and secure headers
+// Delete a product with input validation and error handling
 export const deleteProduct = async (productId) => {
-    if (typeof productId !== 'string') throw new Error("Invalid productId.");
+    if (typeof productId !== 'number') throw new Error("Invalid productId.");
     try {
         const response = await api.delete(`/products/${encodeURIComponent(productId)}`);
         return response.data;
@@ -50,7 +50,7 @@ export const deleteProduct = async (productId) => {
 
 // Set promotion for a product with input validation and secure headers
 export const setPromotion = async (productId, discountedPrice) => {
-    if (typeof productId !== 'string' || typeof discountedPrice !== 'number') throw new Error("Invalid input.");
+    if (typeof productId !== 'number' || typeof discountedPrice !== 'number') throw new Error("Invalid input.");
     try {
         const response = await api.put(
             `/products/${encodeURIComponent(productId)}/set_promotion`,
@@ -70,10 +70,12 @@ export const bulkUploadProducts = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
 
+        // Do NOT set 'Content-Type' manually. Let Axios set it automatically.
         const response = await api.post(`/products/bulk_upload`, formData);
         return response.data;
     } catch (error) {
         console.error('Error bulk uploading products:', error);
+        // If the error response has data, throw that. Otherwise, throw a generic error.
         throw error.response?.data || new Error("Failed to bulk upload products.");
     }
 };

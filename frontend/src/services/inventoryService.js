@@ -3,7 +3,8 @@ import api from './api';
 
 // Update stock level with input validation and secure headers
 export const updateStock = async (product_id, location, stock_level) => {
-    if (typeof product_id !== 'string' || typeof location !== 'string' || typeof stock_level !== 'number') {
+    // Change typeof product_id to 'number'
+    if (typeof product_id !== 'number' || typeof location !== 'string' || typeof stock_level !== 'number') {
         throw new Error("Invalid input data.");
     }
     try {
@@ -17,6 +18,7 @@ export const updateStock = async (product_id, location, stock_level) => {
         throw error.response?.data || new Error("Failed to update stock.");
     }
 };
+
 
 // Get low stock alerts with secure headers and error handling
 export const getLowStockAlerts = async () => {

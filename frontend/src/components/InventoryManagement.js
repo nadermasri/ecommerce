@@ -169,10 +169,26 @@ function InventoryManagement() {
         if (!validateStockForm(formData)) return;
 
         try {
+            // Ensure product_id is a number, as per backend expectation
+            const parsedProductId = parseInt(formData.product_id, 10);
+            const parsedStockLevel = parseInt(formData.stock_level, 10);
+
+            if (isNaN(parsedProductId) || parsedProductId <= 0) {
+                setError("Invalid Product ID.");
+                setAlertOpen(true);
+                return;
+            }
+
+            if (isNaN(parsedStockLevel) || parsedStockLevel < 0) {
+                setError("Stock level must be a non-negative number.");
+                setAlertOpen(true);
+                return;
+            }
+
             const response = await updateStock(
-                parseInt(formData.product_id, 10),
-                formData.location,
-                parseInt(formData.stock_level, 10)
+                parsedProductId,      // Number
+                formData.location,    // String
+                parsedStockLevel      // Number
             );
             setSuccessMessage(response.message || "Stock updated successfully.");
             setError('');
@@ -182,7 +198,8 @@ function InventoryManagement() {
             fetchAllInventory();
         } catch (error) {
             console.error("Failed to update stock:", error);
-            setError("Failed to update stock.");
+            const errorMsg = error.response?.data?.message || "Failed to update stock.";
+            setError(errorMsg);
             setSuccessMessage('');
             setAlertOpen(true);
         }
@@ -194,7 +211,29 @@ function InventoryManagement() {
         if (!validateStockForm(newInventory)) return;
 
         try {
-            const response = await addInventory(newInventory);
+            // Ensure product_id is a number
+            const parsedProductId = parseInt(newInventory.product_id, 10);
+            const parsedStockLevel = parseInt(newInventory.stock_level, 10);
+
+            if (isNaN(parsedProductId) || parsedProductId <= 0) {
+                setError("Invalid Product ID.");
+                setAlertOpen(true);
+                return;
+            }
+
+            if (isNaN(parsedStockLevel) || parsedStockLevel < 0) {
+                setError("Stock level must be a non-negative number.");
+                setAlertOpen(true);
+                return;
+            }
+
+            const inventoryData = {
+                product_id: parsedProductId, // Number
+                location: newInventory.location, // String
+                stock_level: parsedStockLevel  // Number
+            };
+
+            const response = await addInventory(inventoryData);
             setSuccessMessage(response.message || "Inventory added successfully.");
             setError('');
             setAlertOpen(true);
@@ -202,7 +241,8 @@ function InventoryManagement() {
             setNewInventory({ product_id: '', location: '', stock_level: '' });
         } catch (error) {
             console.error("Failed to add inventory:", error);
-            setError("Failed to add inventory. Please try again.");
+            const errorMsg = error.response?.data?.message || "Failed to add inventory. Please try again.";
+            setError(errorMsg);
             setSuccessMessage('');
             setAlertOpen(true);
         }
@@ -212,9 +252,9 @@ function InventoryManagement() {
     const handleEditInventory = (record) => {
         setEditingInventory(record);
         setFormData({
-            product_id: record.product_id,
+            product_id: record.product_id.toString(), // Convert to string for Select component
             location: record.location,
-            stock_level: record.stock_level
+            stock_level: record.stock_level.toString()
         });
         setError('');
         setSuccessMessage('');
@@ -306,7 +346,7 @@ function InventoryManagement() {
                                 required
                             >
                                 {productsList.map(product => (
-                                    <MenuItem key={product.id} value={product.id}>
+                                    <MenuItem key={product.id} value={product.id.toString()}>
                                         {product.name} (ID: {product.id})
                                     </MenuItem>
                                 ))}
@@ -364,7 +404,7 @@ function InventoryManagement() {
                             required
                         >
                             {productsList.map(product => (
-                                <MenuItem key={product.id} value={product.id}>
+                                <MenuItem key={product.id} value={product.id.toString()}>
                                     {product.name} (ID: {product.id})
                                 </MenuItem>
                             ))}
@@ -452,7 +492,8 @@ function InventoryManagement() {
                 <Typography>No inventory report data available.</Typography>
             )}
         </Container>
-    );
-    }
 
+        
+    );
+}
     export default InventoryManagement;

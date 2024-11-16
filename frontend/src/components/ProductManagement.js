@@ -62,6 +62,7 @@ function ProductManagement() {
             const productsData = await getProducts();
             const processedProducts = productsData.map(product => ({
                 ...product,
+                id: Number(product.id),  // Ensure 'id' is a number
                 price: Number(product.price) || 0,
                 stock: Number(product.stock) || 0,
                 stock_threshold: Number(product.stock_threshold) || 10,
@@ -199,7 +200,7 @@ function ProductManagement() {
             setFilteredSubcategories([]);
         } catch (error) {
             console.error("Error adding product:", error);
-            setError("Failed to add product.");
+            setError(error.response?.data?.error || "Failed to add product.");
             setAlertOpen(true);
         }
     };
@@ -213,7 +214,7 @@ function ProductManagement() {
             await fetchAllData();  // Refresh the product list
         } catch (error) {
             console.error("Error deleting product:", error);
-            setError("Failed to delete product.");
+            setError(error.response?.data?.error || "Failed to delete product.");
             setAlertOpen(true);
         }
     };
@@ -235,6 +236,9 @@ function ProductManagement() {
             return;
         }
 
+        // Log the file to ensure it's being set
+        console.log("Uploading file:", file);
+
         try {
             const response = await bulkUploadProducts(file);
             setSuccessMessage(response.message || "Bulk upload completed successfully.");
@@ -244,7 +248,7 @@ function ProductManagement() {
             e.target.reset();  // Reset file input in the form
         } catch (error) {
             console.error("Bulk upload failed:", error);
-            setError("Bulk upload failed. Please ensure the CSV format is correct.");
+            setError(error.response?.data?.error || "Bulk upload failed. Please ensure the CSV format is correct.");
             setAlertOpen(true);
         }
     };
