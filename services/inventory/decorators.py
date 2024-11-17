@@ -18,22 +18,30 @@ def role_required(allowed_roles):
 
 
 def jwt_required(f):
-    """Decorator to ensure that the request contains a valid JWT token."""
+    """Decorator to ensure that the request contains a valid JWT token and CSRF token for state-changing requests."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Retrieve the token from the Authorization header
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            abort(401, "Authorization token required")
+        # Retrieve JWT from HTTP-only cookie
+        token = request.cookies.get("jwt_token")
+        if not token:
+            abort(401, "JWT token required")
 
         try:
-            # Check the token format (assuming "Bearer <token>")
-            token = auth_header.split(" ")[1]
+            # Decode and verify JWT
             payload = jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
             request.user_id = payload.get("user_id")
-            request.user_role = payload.get("role")  # Make sure your JWT includes user role
-        except (IndexError, jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
+            request.user_role = payload.get("role")
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
             abort(401, f"Invalid token: {str(e)}")
 
+        # For state-changing requests, verify CSRF token
+        if request.method in ["POST", "PUT", "DELETE"]:
+            csrf_token = request.cookies.get("csrf_token")  # CSRF token from accessible cookie
+            request_csrf_token = request.headers.get("X-CSRF-Token")  # CSRF token from request header
+
+            if not csrf_token or not request_csrf_token or csrf_token != request_csrf_token:
+                abort(403, "Invalid CSRF token")
+
         return f(*args, **kwargs)
+
     return decorated_function

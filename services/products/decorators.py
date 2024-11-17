@@ -1,7 +1,8 @@
 from functools import wraps
 from flask import request, abort
-import jwt  
+import jwt as pyjwt  
 from config import Config
+from flask import current_app
 
 def role_required(allowed_roles):
     """Decorator to restrict access based on user roles."""
@@ -17,23 +18,37 @@ def role_required(allowed_roles):
 
 
 
-def jwt_required(f):
-    """Decorator to ensure that the request contains a valid JWT token."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Retrieve the token from the Authorization header
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            abort(401, "Authorization token required")
+# Decode and verify JWT
+def verify_jwt(token):
+    try:
+        payload = pyjwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        return payload
+    except pyjwt.ExpiredSignatureError:
+        abort(401, "Token expired, please log in again")
+    except pyjwt.InvalidTokenError:
+        abort(401, "Invalid token, please log in")
 
-        try:
-            # Check the token format (assuming "Bearer <token>")
-            token = auth_header.split(" ")[1]
-            payload = jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
-            request.user_id = payload.get("user_id")
-            request.user_role = payload.get("role")  # Make sure your JWT includes user role
-        except (IndexError, jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
-            abort(401, f"Invalid token: {str(e)}")
+#To protect routes with JWT authentication
+def jwt_required(f):
+    def decorated_function(*args, **kwargs):
+        token = request.cookies.get("jwt_token")
+        if not token:
+            abort(401, "JWT token is missing")
+
+        # Verify JWT
+        payload = verify_jwt(token)
+        request.user_id = payload["user_id"]
+        request.user_role = payload.get("role")
+        
+        # Check CSRF token for state-changing requests
+        if request.method in ["POST", "PUT", "DELETE"]:
+            csrf_token = request.cookies.get("csrf_token")
+            request_csrf_token = request.headers.get("X-CSRF-Token")
+            if not csrf_token or not request_csrf_token or csrf_token != request_csrf_token:
+                abort(403, "Invalid CSRF token")
+
 
         return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
     return decorated_function
+

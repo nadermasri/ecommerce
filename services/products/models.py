@@ -1,6 +1,8 @@
 #authentic_lebanese_sentiment_shop/services/products/models.py
 from app import db
 from sqlalchemy.orm import validates
+from ..inventory.models import Inventory
+from sqlalchemy import event, insert, delete, update
 
 
 class Category(db.Model):
@@ -89,3 +91,38 @@ class Product(db.Model):
         if not value or len(value) > 255:
             raise ValueError("Name must be between 1 and 255 characters")
         return value
+
+
+
+# Event listener to create Inventory after Product insert
+@event.listens_for(Product, 'after_insert')
+def create_inventory_for_product(mapper, connection, target):
+    # Use the connection to insert directly into the Inventory table
+    connection.execute(
+        insert(Inventory).values(
+            product_id=target.id,
+            location="Main Warehouse",  # Default location
+            stock_level=target.stock  # Sync with product's initial stock level
+        )
+    )
+
+# Event listener to delete Inventory after Product deletion
+@event.listens_for(Product, 'after_delete')
+def delete_inventory_for_product(mapper, connection, target):
+    # Use the connection to delete all inventory records associated with the product
+    connection.execute(
+        delete(Inventory).where(Inventory.product_id == target.id)
+    )
+
+# Event listener to update Inventory stock level after Product stock is updated
+@event.listens_for(Product, 'after_update')
+def update_inventory_stock_level(mapper, connection, target):
+    # Update the stock level in the Inventory to match the Product's updated stock
+    connection.execute(
+        update(Inventory)
+        .where(Inventory.product_id == target.id)
+        .values(
+            stock_level=target.stock,
+            last_updated=target.updated_at  # Update last_updated timestamp
+        )
+    )
