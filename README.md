@@ -83,13 +83,15 @@ Currently, the project includes only the **Admin module**.
 ---
 
 ### Notes
-Backend: Runs on localhost:5000
-Frontend: Runs on localhost:3000
-The frontend connects to the backend through RESTful API endpoints.
+- **Backend**: Runs on localhost:5000
+- **Frontend**: Runs on localhost:3000
+- The frontend connects to the backend through RESTful API endpoints.
 
 ---
 
 ### Contributors
-Yasmeen Lamaa - Nader Al Masri - Lynn El Hariri
+- Yasmeen Lamaa
+- Nader Al Masri
+- Lynn El Hariri
 
 
