@@ -30,23 +30,26 @@ Currently, the project includes only the **Admin module**.
    git clone https://github.com/yourusername/ecommerce.git
    cd ecommerce
 
-### **Setup the Backend**
-Set up a virtual environment:
+### Setup the Backend
 
-On macOS/Linux:
-```bash
-   python -m venv venv
-   source venv/bin/activate
+1. **Set up a virtual environment**:
 
-On Windows:
-```bash
-   python -m venv venv
-   venv\Scripts\activate
+   - On macOS/Linux:
+     ```bash
+     python -m venv venv
+     source venv/bin/activate
+     ```
 
-### **Install dependencies:**
+   - On Windows:
+     ```bash
+     python -m venv venv
+     venv\Scripts\activate
+     ```
 
-```bash
+2. **Install dependencies**:
+   ```bash
    pip install -r requirements.txt
+
 
 Configure the .env file: Create a .env file in the root directory and add the following:
 
