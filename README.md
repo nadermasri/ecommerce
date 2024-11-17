@@ -50,44 +50,38 @@ Currently, the project includes only the **Admin module**.
    ```bash
    pip install -r requirements.txt
 
-
-Configure the .env file: Create a .env file in the root directory and add the following:
-
-```bash
+3. **Configure the .env file: Create a .env file in the root directory and add the following**:
+   ```bash
    FLASK_APP=app.py
    FLASK_ENV=development
    SECRET_KEY=your_secret_key
    DATABASE_URL=mysql://username:password@localhost/ecommerce_db
 
-### **Initialize the database:**
-
-```bash
+4. **Initialize the database**:
+   ```bash
    flask db init
    flask db migrate
    flask db upgrade
 
-### **Run the development server:**
-
-```bash
+5. **Run the development server**:
+   ```bash
    flask run
 
-### **Setup the Frontend**
-Navigate to the frontend directory:
-
-```bash
+### Setup the Frontend
+1. **Navigate to the frontend directory**:
+   ```bash
    cd frontend
 
-### **Install dependencies:**
-
-```bash
+2. **Install dependencies:**
+   ```bash
    npm install
 
-### **Start the frontend development server:**
-
-```bash
+3. **Start the frontend development server:**
+   ```bash
    npm start
 
 ---
+
 ### Notes
 Backend: Runs on localhost:5000
 Frontend: Runs on localhost:3000
