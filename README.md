@@ -35,53 +35,54 @@ Set up a virtual environment:
 
 On macOS/Linux:
 ```bash
-python -m venv venv
-source venv/bin/activate
+   python -m venv venv
+   source venv/bin/activate
 
 On Windows:
 ```bash
-python -m venv venv
-venv\Scripts\activate
+   python -m venv venv
+   venv\Scripts\activate
 
 ### **Install dependencies:**
 
 ```bash
-pip install -r requirements.txt
+   pip install -r requirements.txt
 
 Configure the .env file: Create a .env file in the root directory and add the following:
 
 ```bash
-FLASK_APP=app.py
-FLASK_ENV=development
-SECRET_KEY=your_secret_key
-DATABASE_URL=mysql://username:password@localhost/ecommerce_db
+   FLASK_APP=app.py
+   FLASK_ENV=development
+   SECRET_KEY=your_secret_key
+   DATABASE_URL=mysql://username:password@localhost/ecommerce_db
 
 ### **Initialize the database:**
 
 ```bash
-flask db init
-flask db migrate
-flask db upgrade
+   flask db init
+   flask db migrate
+   flask db upgrade
 
 ### **Run the development server:**
 
 ```bash
-flask run
+   flask run
 
-Setup the Frontend
+### **Setup the Frontend**
 Navigate to the frontend directory:
 
 ```bash
-cd frontend
+   cd frontend
 
-Install dependencies:
-
-```bash
-npm install
-Start the frontend development server:
+### **Install dependencies:**
 
 ```bash
-npm start
+   npm install
+
+### **Start the frontend development server:**
+
+```bash
+   npm start
 
 ---
 ### Notes
