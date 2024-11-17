@@ -3,12 +3,8 @@ from flask import Blueprint, request, jsonify, abort, current_app
 from functools import wraps
 import smtplib
 from email.mime.text import MIMEText
-<<<<<<< HEAD
-import jwt 
-=======
 # import jwt
 import jwt as pyjwt
->>>>>>> frontend
 from datetime import datetime, timedelta
 from app import db
 # , limiter
@@ -126,7 +122,6 @@ def login():
     password = data.get("password")
 
     user = AdminUser.query.filter_by(username=username).first() or User.query.filter_by(username=username).first()
-
     if user and user.check_password(password):
         jwt_token = create_jwt_token(user) #jwt token
         csrf_token = secrets.token_hex(16) #csrf token
@@ -212,43 +207,6 @@ def update_user_profile(user_id):
         if request.user_id != user_id and request.user_role != 'SuperAdmin':
             abort(403, "Unauthorized action")
 
-<<<<<<< HEAD
-    data = request.json
-    changes = []  # Track changed fields for logging purposes
-    
-    if 'username' in data and data['username'] != user.username:
-        changes.append('username')
-        user.username = data['username']
-    if 'email' in data and data['email'] != user.email:
-        changes.append('email')
-        user.email = data['email']
-    if 'address' in data and data['address'] != user.address:
-        changes.append('address')
-        user.address = data['address']
-    if 'phone_number' in data and data['phone_number'] != user.phone_number:
-        changes.append('phone_number')
-        user.phone_number = data['phone_number']
-    if 'membership_tier' in data and data['membership_tier'] != user.membership_tier:
-        changes.append('membership_tier')
-        user.membership_tier = data['membership_tier']
-    if 'wishlist' in data and data['wishlist'] != user.wishlist:
-        changes.append('wishlist')
-        user.wishlist = data['wishlist']
-    if 'preferences' in data and data['preferences'] != user.preferences:
-        changes.append('preferences')
-        user.preferences = data['preferences']
-    if 'password' in data:
-        changes.append('password')
-        user.set_password(data['password'])
-    
-    db.session.commit()
-
-    # Only log if the user has an admin role
-    if request.user_role in ['SuperAdmin']:
-        action_details = f"Updated fields: {', '.join(changes)}"
-        activity_log = ActivityLog(admin_id=request.user_id, action=f"Updated user profile {user_id}. {action_details}")
-        db.session.add(activity_log)
-=======
         data = request.json
         changes = []  # Track changed fields for logging purposes
         
@@ -277,7 +235,6 @@ def update_user_profile(user_id):
             changes.append('password')
             user.set_password(data['password'])
         
->>>>>>> frontend
         db.session.commit()
 
         # Only log if the user has an admin role
