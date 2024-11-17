@@ -34,26 +34,23 @@ Currently, the project includes only the **Admin module**.
 Set up a virtual environment:
 
 On macOS/Linux:
-bash
-Copy code
+```bash
 python -m venv venv
 source venv/bin/activate
+
 On Windows:
-bash
-Copy code
+```bash
 python -m venv venv
 venv\Scripts\activate
 
 ### **Install dependencies:**
 
-bash
-Copy code
+```bash
 pip install -r requirements.txt
 
 Configure the .env file: Create a .env file in the root directory and add the following:
 
-plaintext
-Copy code
+```bash
 FLASK_APP=app.py
 FLASK_ENV=development
 SECRET_KEY=your_secret_key
@@ -61,43 +58,40 @@ DATABASE_URL=mysql://username:password@localhost/ecommerce_db
 
 ### **Initialize the database:**
 
-bash
-Copy code
+```bash
 flask db init
 flask db migrate
 flask db upgrade
 
 ### **Run the development server:**
 
-bash
-Copy code
+```bash
 flask run
+
 Setup the Frontend
 Navigate to the frontend directory:
 
-bash
-Copy code
+```bash
 cd frontend
 
 Install dependencies:
 
-bash
-Copy code
+```bash
 npm install
 Start the frontend development server:
 
-bash
-Copy code
+```bash
 npm start
 
-### **Notes**
+---
+### Notes
 Backend: Runs on localhost:5000
 Frontend: Runs on localhost:3000
 The frontend connects to the backend through RESTful API endpoints.
 
-### **Contributors**
-Yasmeen Lamaa - Developer
-Nader Al Masri - Developer
-Lynn El Hariri - Developer
+---
+
+### Contributors
+Yasmeen Lamaa - Nader Al Masri - Lynn El Hariri
 
 
