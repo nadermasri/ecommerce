@@ -1,5 +1,3 @@
-# app.py
-
 from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
@@ -48,16 +46,22 @@ def create_app():
     login_manager.login_message = "Please log in to access this page."
     login_manager.session_protection = "strong"
 
-    # Register Blueprints
+    # Register Blueprints with appropriate URL prefixes
     from services.orders.routes import orders_bp
     from services.products.routes import products_bp
     from services.user_management.routes import users_bp
     from services.inventory.routes import inventory_bp
+    from services.cart.routes import cart_bp
+    from services.promotions.routes import promotions_bp
+    from services.coupons.routes import coupons_bp
 
     app.register_blueprint(orders_bp, url_prefix='/orders')
     app.register_blueprint(products_bp, url_prefix='/products')
     app.register_blueprint(users_bp, url_prefix='/user')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
+    app.register_blueprint(cart_bp, url_prefix='/api/cart')
+    app.register_blueprint(promotions_bp, url_prefix='/api/promotions')
+    app.register_blueprint(coupons_bp, url_prefix='/api/coupons')
 
     logger.info("Application initialized with enhanced security configurations.")
 

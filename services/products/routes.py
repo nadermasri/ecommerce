@@ -1,3 +1,4 @@
+#products/routes.py
 from flask import Blueprint, request, jsonify, abort
 from .models import Product, Category, Subcategory
 from .decorators import role_required, jwt_required
@@ -15,8 +16,6 @@ products_bp = Blueprint('products', __name__)
 
 # Get all subcategories
 @products_bp.route('/subcategories', methods=['GET'])
-@jwt_required
-@role_required(['SuperAdmin', 'ProductManager'])
 def get_subcategories():
     # Use a single query to join Category and Subcategory tables
     subcategories = Subcategory.query.outerjoin(Category).all()
@@ -70,8 +69,6 @@ def delete_subcategory(subcategory_id):
 
 # Get all categories
 @products_bp.route('/categories', methods=['GET'])
-@jwt_required
-@role_required(['SuperAdmin', 'ProductManager'])
 def get_categories():
     categories = Category.query.all()
     return jsonify([category.to_dict() for category in categories])
@@ -215,8 +212,6 @@ def add_subcategory():
 
 # Get all products
 @products_bp.route('/', methods=['GET'])
-@jwt_required
-@role_required(['SuperAdmin', 'ProductManager', 'InventoryManager', 'OrderManager'])
 def get_products():
     products = Product.query.all()
     return jsonify([product.to_dict() for product in products])

@@ -1,4 +1,4 @@
-# app/utils.py
+# user_management/utils.py
 
 import re
 from .models import User

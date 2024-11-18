@@ -1,3 +1,4 @@
+#inventory/models.py
 from app import db
 
 class Inventory(db.Model):

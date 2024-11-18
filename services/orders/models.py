@@ -8,23 +8,28 @@ class Order(db.Model):
     __tablename__ = 'orders'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Made nullable for guest orders
+    guest_email = db.Column(db.String(120), nullable=True)  # Email for guest users
+    guest_address = db.Column(db.String(255), nullable=True)  # Address for guest users
     total_price = db.Column(db.Numeric(10, 2), nullable=False)
     order_date = db.Column(db.DateTime, default=db.func.now())
     status = db.Column(db.Enum('Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled'), default='Pending')
     delivery_option = db.Column(db.Enum('Standard', 'Express', 'In-Store Pickup'))
     created_at = db.Column(db.DateTime, default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+    coupon_id = db.Column(db.Integer, db.ForeignKey('coupons.id'), nullable=True)
 
     # Relationships
     user = db.relationship('User', back_populates='orders')
     items = db.relationship('OrderItem', backref='order', cascade='all, delete-orphan')
+    coupon = db.relationship('Coupon', backref='orders')
 
     def to_dict(self):
-        """Converts model data to a dictionary, excludes sensitive information if necessary."""
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "guest_email": self.guest_email,
+            "guest_address": self.guest_address,
             "total_price": str(self.total_price),
             "order_date": self.order_date,
             "status": self.status,

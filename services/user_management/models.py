@@ -16,11 +16,12 @@ class User(db.Model):
     phone_number = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
-    wishlist = db.Column(db.JSON)  # JSON field to store a list of product IDs
-    preferences = db.Column(db.JSON)  # JSON field for storing user-specific settings
+    wishlist = db.Column(db.JSON)  # List of product IDs
+    preferences = db.Column(db.JSON)  # User-specific settings
 
-    # Relationship with orders
+    # Relationships
     orders = db.relationship('Order', back_populates='user', lazy=True)
+    cart = db.relationship('Cart', uselist=False, back_populates='user')  # One-to-one relationship with Cart
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -93,3 +94,42 @@ class ActivityLog(db.Model):
             "action": self.action,
             "timestamp": self.timestamp.isoformat()  # Converts datetime to a string
         }
+    
+
+class Address(db.Model):
+    __tablename__ = 'addresses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    address_line1 = db.Column(db.String(255), nullable=False)
+    address_line2 = db.Column(db.String(255))
+    city = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(100), nullable=False)
+    postal_code = db.Column(db.String(20), nullable=False)
+    country = db.Column(db.String(100), nullable=False)
+    is_default = db.Column(db.Boolean, default=False)
+
+    # Relationships
+    user = db.relationship('User', backref='addresses')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "address_line1": self.address_line1,
+            "address_line2": self.address_line2,
+            "city": self.city,
+            "state": self.state,
+            "postal_code": self.postal_code,
+            "country": self.country,
+            "is_default": self.is_default
+        }
+
+    @validates('is_default')
+    def validate_default(self, key, value):
+        if value:
+            # Ensure only one default address per user
+            existing_default = Address.query.filter_by(user_id=self.user_id, is_default=True).first()
+            if existing_default and existing_default.id != self.id:
+                raise ValueError("Only one default address is allowed per user")
+        return value

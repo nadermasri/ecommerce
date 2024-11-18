@@ -1,4 +1,5 @@
-#inventory/decorators.py
+# services/cart/decorators.py
+
 from functools import wraps
 from flask import request, abort
 import jwt  
@@ -9,13 +10,15 @@ def role_required(allowed_roles):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Check if user_role in request matches one of the allowed roles
+            # Ensure user_role is set by jwt_required
+            if not hasattr(request, 'user_role'):
+                abort(401, "Unauthorized: No role information found.")
+            
             if request.user_role not in allowed_roles:
                 abort(403, "Access denied. You do not have permission to perform this action.")
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-
 
 
 def jwt_required(f):

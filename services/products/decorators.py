@@ -1,3 +1,4 @@
+#products/decorators.py
 from functools import wraps
 from flask import request, abort
 import jwt as pyjwt  
