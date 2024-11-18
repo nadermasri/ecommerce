@@ -1,4 +1,4 @@
-// frontend/src/services/api.js
+// src/services/api.js
 import axios from 'axios';
 
 // Helper function to retrieve CSRF token from cookies
@@ -10,13 +10,12 @@ const getCsrfTokenFromCookie = () => {
 
 // Create a centralized Axios instance
 const api = axios.create({
-    baseURL: 'http://localhost:5000',
-    withCredentials: true,
+    baseURL: 'http://localhost:5000', // Replace with your backend URL
+    withCredentials: true, // Ensures cookies are sent with requests
     headers: {
         'Content-Type': 'application/json',
     },
 });
-
 
 // Axios request interceptor to include CSRF token
 api.interceptors.request.use(
@@ -32,18 +31,5 @@ api.interceptors.request.use(
     }
 );
 
-// Remove or comment out the response interceptor to prevent redirect loops
-/*
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            // Redirect to login page
-            window.location.href = '/';
-        }
-        return Promise.reject(error);
-    }
-);
-*/
 
 export default api;

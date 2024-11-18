@@ -2,7 +2,7 @@
 
 // Import essential modules and components from React and MUI libraries
 import React, { useState, useEffect } from 'react';
-import { fetchActivityLogs } from '../services/userService'; // Ensure this service uses the centralized Axios instance
+import { fetchActivityLogs } from '../../services/userService'; // Ensure this service uses the centralized Axios instance
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Snackbar, Alert } from '@mui/material';
 
 function ActivityLogs() { // Removed 'token' prop

@@ -9,7 +9,7 @@ import {
     updateAdminUser,
     deleteAdminUser,
     createAdmin
-} from '../services/userService';
+} from '../../services/userService';
 import {
     TextField,
     Button,

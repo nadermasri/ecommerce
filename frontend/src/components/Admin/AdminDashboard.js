@@ -1,7 +1,7 @@
-// components/AdminDashboard.js
+// src/components/Admin/AdminDashboard.js
 
 import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import {
   Box, Button, IconButton, Menu, MenuItem, Avatar,
   Tooltip, Typography, Tabs, Tab
@@ -12,8 +12,8 @@ import {
 } from '@mui/icons-material';
 
 // Import authentication service and context
-import { logout } from '../services/authService';
-import { AuthContext } from '../context/AuthContext';
+import { logout } from '../../services/authService';
+import { AuthContext } from '../../context/AuthContext';
 
 // Import dashboard components
 import OrderManagement from './OrderManagement';
@@ -75,8 +75,13 @@ function AdminDashboard() {
 
   // Secure logout handler
   const handleLogout = async () => {
-    await logout(); // Clear auth token securely
-    navigate('/'); // Redirect to login page
+    try {
+      await logout(); // Clear auth token securely
+      navigate('/home'); // Redirect to home page
+    } catch (error) {
+      console.error("Logout Error:", error);
+      // Optionally, display an error message to the user
+    }
   };
 
   return (

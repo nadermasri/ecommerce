@@ -1,4 +1,4 @@
-// frontend/src/services/authService.js
+// src/services/authService.js
 import api from './api';
 
 // Login function
@@ -8,7 +8,7 @@ export const login = async (username, password) => {
     }
     try {
         const response = await api.post('/user/login', { username, password });
-        // No need to store the JWT token in localStorage
+        // No need to store the JWT token in localStorage if using HttpOnly cookies
         return response.data;
     } catch (error) {
         console.error("Error during login:", error);

@@ -1,33 +1,59 @@
-// frontend/src/components/LoginForm.js
-import React, { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+// src/components/Shared/AdminLogin.js
+
+import React, { useState, useContext, useEffect } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Button, Container, Typography, CircularProgress, InputAdornment, FormControl, InputLabel, OutlinedInput } from '@mui/material';
+import {
+    Button,
+    Container,
+    Typography,
+    CircularProgress,
+    InputAdornment,
+    FormControl,
+    InputLabel,
+    OutlinedInput,
+    Snackbar,
+    Alert
+} from '@mui/material';
 import { AccountCircle, Visibility, VisibilityOff } from '@mui/icons-material';
 
-function LoginForm() {
-    const { loginUser } = useContext(AuthContext);
+function AdminLogin() {
+    const { loginUser, isAuthenticated, user } = useContext(AuthContext);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertSeverity, setAlertSeverity] = useState('info');
 
     // Handler for logging in
     const handleLogin = async () => {
         setError(''); // Clear previous errors
         if (!username || !password) {
             setError('Please enter both username and password');
+            setAlertMessage('Please enter both username and password');
+            setAlertSeverity('error');
+            setAlertOpen(true);
             return;
         }
 
         setLoading(true);
         try {
+            console.log(`Logging in admin: ${username}`); // Debugging
             await loginUser(username, password); // Login via AuthContext
-            navigate('/dashboard/home'); // Redirect to dashboard home
+            // No immediate navigation here; handled in useEffect
+            setAlertMessage('Login successful!');
+            setAlertSeverity('success');
+            setAlertOpen(true);
         } catch (err) {
+            console.error("Handle Login Error:", err);
             setError(err.message || 'Login failed. Please try again.');
+            setAlertMessage(err.message || 'Login failed. Please try again.');
+            setAlertSeverity('error');
+            setAlertOpen(true);
         } finally {
             setLoading(false);
         }
@@ -45,6 +71,19 @@ function LoginForm() {
             handleLogin(); // Supports accessibility for keyboard users
         }
     };
+
+    const handleCloseAlert = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setAlertOpen(false);
+    };
+
+    // useEffect to navigate after successful login
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'SuperAdmin') {
+            console.log("Authenticated as admin, navigating to /admin/home"); // Debugging
+            navigate('/admin/home');
+        }
+    }, [isAuthenticated, user, navigate]);
 
     return (
         <Container maxWidth="xs" style={styles.container}>
@@ -118,8 +157,21 @@ function LoginForm() {
             <div style={styles.forgot}>
                 <a href="#" style={styles.forgotLink}>Forgot password?</a>
             </div>
+
+            {/* Snackbar for user feedback */}
+            <Snackbar
+                open={alertOpen}
+                autoHideDuration={6000}
+                onClose={handleCloseAlert}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert onClose={handleCloseAlert} severity={alertSeverity} sx={{ width: '100%' }}>
+                    {alertMessage}
+                </Alert>
+            </Snackbar>
         </Container>
     );
+
 }
 
 // Styling for the component elements
@@ -160,9 +212,6 @@ const styles = {
     inputLabel: {
         color: '#333',
     },
-    inputField: {
-        color: '#333',
-    },
     loginButton: {
         marginTop: '1.5rem',
         padding: '1rem',
@@ -196,4 +245,4 @@ const styles = {
     },
 };
 
-export default LoginForm;
+export default AdminLogin;

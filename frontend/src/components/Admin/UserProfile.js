@@ -1,7 +1,7 @@
 // src/components/UserProfile.js
 
 import React, { useState, useEffect } from 'react';
-import { updateUserProfile, fetchUsers } from '../services/userService';
+import { updateUserProfile, fetchUsers } from '../../services/userService';
 import {
     TextField,
     Button,

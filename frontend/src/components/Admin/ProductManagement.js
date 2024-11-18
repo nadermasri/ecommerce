@@ -6,9 +6,9 @@ import {
     addProduct,
     deleteProduct,
     bulkUploadProducts
-} from '../services/productService';
-import { fetchCategories } from '../services/categoryService';          // Import fetchCategories
-import { fetchSubcategories } from '../services/subcategoryService';    // Import fetchSubcategories
+} from '../../services/productService';
+import { fetchCategories } from '../../services/categoryService';          // Import fetchCategories
+import { fetchSubcategories } from '../../services/subcategoryService';    // Import fetchSubcategories
 import {
     Table,
     TableBody,

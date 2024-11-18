@@ -83,3 +83,13 @@ export const bulkUploadProducts = async (file) => {
     }
 };
 
+export const fetchProductById = async (productId) => {
+    if (typeof productId !== 'number') throw new Error("Invalid productId.");
+    try {
+        const response = await api.get(`/products/${encodeURIComponent(productId)}`);
+        return response.data; // Assuming the backend returns the product data
+    } catch (error) {
+        console.error('Error fetching product by ID:', error);
+        throw error.response?.data || new Error("Failed to fetch product.");
+    }
+};

@@ -438,3 +438,13 @@ def set_promotion(product_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Failed to process request"}), 500
+    
+# **Added Route: Get a Single Product by ID**
+@products_bp.route('/<int:product_id>', methods=['GET'])
+def get_product_by_id(product_id):
+    try:
+        product = Product.query.get_or_404(product_id)
+        return jsonify(product.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Failed to fetch product."}), 500

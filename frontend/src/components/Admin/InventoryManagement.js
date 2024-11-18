@@ -7,8 +7,8 @@ import {
     getInventoryReport,
     fetchInventory,
     addInventory
-} from '../services/inventoryService';
-import { getProducts } from '../services/productService'; // Import getProducts
+} from '../../services/inventoryService';
+import { getProducts } from '../../services/productService'; // Import getProducts
 import {
     TextField,
     Button,

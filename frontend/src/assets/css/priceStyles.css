@@ -1,0 +1,19 @@
+/* src/assets/css/priceStyles.css */
+
+/* Ensure that no text-decoration is applied to the price unless specifically intended */
+.price-text {
+    text-decoration: none !important;
+    font-weight: bold;
+}
+
+/* Styles for original price when there's a discount */
+.original-price {
+    text-decoration: line-through;
+    color: #555; /* Gray color for original price */
+}
+
+/* Styles for discounted price */
+.discounted-price {
+    color: #e53935; /* Red color for discounts */
+    font-weight: bold;
+}

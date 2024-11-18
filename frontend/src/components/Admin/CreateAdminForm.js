@@ -1,7 +1,7 @@
 // src/components/CreateAdminForm.js
 
 import React, { useState } from 'react';
-import { createAdmin } from '../services/adminService';
+import { createAdmin } from '../../services/adminService';
 import {
     TextField,
     Button,

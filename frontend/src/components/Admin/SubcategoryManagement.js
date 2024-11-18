@@ -1,8 +1,8 @@
 // src/components/SubcategoryManagement.js
 
 import React, { useState, useEffect } from 'react';
-import { fetchSubcategories, createSubcategory, deleteSubcategory, updateSubcategory } from '../services/subcategoryService';
-import { fetchCategories } from '../services/categoryService';
+import { fetchSubcategories, createSubcategory, deleteSubcategory, updateSubcategory } from '../../services/subcategoryService';
+import { fetchCategories } from '../../services/categoryService';
 import {
     TextField,
     Button,

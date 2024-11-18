@@ -1,7 +1,7 @@
 // src/components/CategoryManagement.js
 
 import React, { useState, useEffect } from 'react';
-import { fetchCategories, createCategory, deleteCategory, updateCategory } from '../services/categoryService';
+import { fetchCategories, createCategory, deleteCategory, updateCategory } from '../../services/categoryService';
 import {
     TextField,
     Button,

@@ -1,7 +1,7 @@
-// services/orderService.js
+// frontend/src/services/orderService.js
 import api from './api';
 
-// Fetch all orders with secure headers and error handling
+// Fetch all orders
 export const fetchOrders = async () => {
     try {
         const response = await api.get(`/orders/`);
@@ -12,7 +12,7 @@ export const fetchOrders = async () => {
     }
 };
 
-// Create a new order with input validation and error handling
+// Create a new order
 export const createOrder = async (orderData) => {
     if (typeof orderData !== 'object') throw new Error("Invalid order data.");
     try {
@@ -24,7 +24,7 @@ export const createOrder = async (orderData) => {
     }
 };
 
-// Update order information with input validation and error handling
+// Update order information
 export const updateOrderInfo = async (orderId, updateData) => {
     if (typeof orderId !== 'number' || typeof updateData !== 'object') throw new Error("Invalid input.");
     try {
@@ -36,7 +36,7 @@ export const updateOrderInfo = async (orderId, updateData) => {
     }
 };
 
-// Delete an order with input validation and error handling
+// Delete an order
 export const deleteOrder = async (orderId) => {
     if (typeof orderId !== 'number') throw new Error("Invalid orderId.");
     try {
@@ -48,7 +48,7 @@ export const deleteOrder = async (orderId) => {
     }
 };
 
-// Track an order with input validation and error handling
+// Track an order
 export const trackOrder = async (orderId) => {
     if (typeof orderId !== 'number') throw new Error("Invalid orderId.");
     try {
@@ -60,7 +60,7 @@ export const trackOrder = async (orderId) => {
     }
 };
 
-// Return an item with input validation and error handling
+// Return an item
 export const returnItem = async (orderId, orderItemId, reason) => {
     if (typeof orderId !== 'number' || typeof orderItemId !== 'number' || typeof reason !== 'string') {
         throw new Error("Invalid input data.");
@@ -77,7 +77,7 @@ export const returnItem = async (orderId, orderItemId, reason) => {
     }
 };
 
-// Fetch all returns with secure headers and error handling
+// Fetch all returns
 export const fetchReturns = async () => {
     try {
         const response = await api.get(`/orders/returns`);
@@ -88,7 +88,7 @@ export const fetchReturns = async () => {
     }
 };
 
-// Update return status with input validation and secure headers
+// Update return status
 export const updateReturnStatus = async (returnId, status) => {
     if (typeof returnId !== 'number' || typeof status !== 'string') throw new Error("Invalid input.");
     try {
@@ -103,7 +103,7 @@ export const updateReturnStatus = async (returnId, status) => {
     }
 };
 
-// Fetch all products with secure headers and error handling
+// Fetch all products
 export const fetchProducts = async () => {
     try {
         const response = await api.get(`/products/`);
@@ -112,4 +112,35 @@ export const fetchProducts = async () => {
         console.error("Error fetching products:", error);
         throw error.response?.data || new Error("Failed to fetch products.");
     }
+};
+
+// **Added Functions**
+
+// Fetch orders for a specific user
+export const fetchUserOrders = async (userId) => {
+    if (typeof userId !== 'number') throw new Error("Invalid userId.");
+    try {
+        const response = await api.get(`/orders/user/${encodeURIComponent(userId)}`);
+        return response.data.orders; // Adjust based on your API response
+    } catch (error) {
+        console.error("Error fetching user orders:", error);
+        throw error.response?.data || new Error("Failed to fetch user orders.");
+    }
+};
+
+// Fetch details of a specific order
+export const fetchOrderDetails = async (orderId) => {
+    if (typeof orderId !== 'number') throw new Error("Invalid orderId.");
+    try {
+        const response = await api.get(`/orders/${encodeURIComponent(orderId)}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching order details:", error);
+        throw error.response?.data || new Error("Failed to fetch order details.");
+    }
+};
+
+// Place a new order (alias for createOrder)
+export const placeOrder = async (orderData) => {
+    return await createOrder(orderData);
 };

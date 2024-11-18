@@ -34,13 +34,13 @@ import {
 } from 'recharts';
 
 // Import services
-import { fetchUsers, fetchActivityLogs } from '../services/userService';
-import { getProducts } from '../services/productService';
-import { getLowStockAlerts } from '../services/inventoryService';
-import { fetchOrders } from '../services/orderService';
+import { fetchUsers, fetchActivityLogs } from '../../services/userService';
+import { getProducts } from '../../services/productService';
+import { getLowStockAlerts } from '../../services/inventoryService';
+import { fetchOrders } from '../../services/orderService';
 
 // Import AuthContext
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../../context/AuthContext';
 
 const DashboardHome = ({ setTabIndex, tabLabelToIndex }) => {
   const { user } = useContext(AuthContext);
