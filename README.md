@@ -123,7 +123,7 @@ This platform has been designed with **security first** to ensure that both admi
 ### **Clone the Repository**
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/ecommerce.git
+   git clone https://github.com/nadermasri/ecommerce.git
    cd ecommerce
 
 ### Setup the Backend
